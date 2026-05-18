@@ -1,0 +1,430 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand: #4C8BF5;
+  --color-brand-light: #EFF5FF;
+  --color-brand-hover: #3B7AE4;
+  --color-border: #F0F1F3;
+  --color-border-dark: #E5E6EB;
+  --color-bg-page: #F7F8FA;
+  --color-bg-white: #FFFFFF;
+  --color-text-primary: #1D2129;
+  --color-text-secondary: #6E7681;
+  --color-text-tertiary: #86909C;
+  --color-bubble-user: #F2F3F5;
+  --color-bubble-agent: #FFFFFF;
+  --color-online: #00B42A;
+  --color-busy: #FF7D00;
+  --color-offline: #C9CDD4;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  color: var(--color-text-primary);
+  background: var(--color-bg-page);
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #E5E6EB;
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #C9CDD4;
+}
+
+.ant-btn-primary {
+  background: var(--color-brand) !important;
+  border-color: var(--color-brand) !important;
+}
+
+.ant-btn-primary:hover {
+  background: var(--color-brand-hover) !important;
+  border-color: var(--color-brand-hover) !important;
+}
+
+.chat-input .ant-input,
+.chat-input textarea.ant-input {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+  font-weight: 400 !important;
+  color: var(--color-text-primary) !important;
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+}
+
+.chat-input .ant-input::placeholder,
+.chat-input textarea.ant-input::placeholder {
+  color: var(--color-text-tertiary) !important;
+  font-weight: 400 !important;
+}
+
+.chat-input .ant-input:focus,
+.chat-input textarea.ant-input:focus {
+  box-shadow: none !important;
+}
+
+.detail-switch .ant-switch {
+  min-width: 36px !important;
+  height: 20px !important;
+}
+
+@keyframes voicePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.3); }
+}
+
+.voice-pulse {
+  animation: voicePulse 1.2s ease-in-out infinite;
+}
+
+.voice-stop-btn {
+  transition: all 0.2s ease;
+}
+
+.voice-stop-btn:hover {
+  transform: scale(1.08);
+}
+
+.voice-stop-btn:active {
+  transform: scale(0.95);
+}
+
+.voice-btn-idle {
+  transition: all 0.2s ease;
+}
+
+.voice-btn-idle:hover {
+  background: #E5E6EB !important;
+  transform: scale(1.05);
+}
+
+/* Voice wave bars on mic button */
+.voice-wave-icon {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 18px;
+}
+
+.voice-bar {
+  width: 3px;
+  height: 8px;
+  border-radius: 1.5px;
+  background: #fff;
+  animation: voiceBarPulse 0.8s ease-in-out infinite alternate;
+  transform-origin: center;
+}
+
+.voice-bar-tall {
+  height: 12px;
+}
+
+@keyframes voiceBarPulse {
+  0% { transform: scaleY(0.4); opacity: 0.6; }
+  50% { transform: scaleY(1); opacity: 1; }
+  100% { transform: scaleY(0.5); opacity: 0.7; }
+}
+
+/* Exec step running indicator */
+.exec-step-running {
+  position: relative;
+}
+
+.exec-step-running::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 1.5px solid #4C8BF5;
+  opacity: 0;
+  animation: execPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes execPulse {
+  0% { transform: scale(0.8); opacity: 0.6; }
+  50% { transform: scale(1.2); opacity: 0; }
+  100% { transform: scale(0.8); opacity: 0; }
+}
+
+/* Smooth fade-in for messages */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.msg-enter {
+  animation: fadeInUp 0.25s ease-out;
+}
+
+/* Typing indicator bounce */
+@keyframes typingBounce {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40% { transform: scale(1); opacity: 1; }
+}
+
+/* Sidebar hover glow */
+.sidebar-item-active {
+  box-shadow: inset 3px 0 0 #4C8BF5;
+}
+
+/* Smooth scrollbar show/hide */
+.scroll-fade::-webkit-scrollbar-thumb {
+  background: transparent;
+  transition: background 0.3s;
+}
+
+.scroll-fade:hover::-webkit-scrollbar-thumb {
+  background: #E5E6EB;
+}
+
+/* Input focus ring */
+.input-focus-ring:focus-within {
+  border-color: #B8D4FF !important;
+  box-shadow: 0 0 0 3px rgba(76, 139, 245, 0.08);
+}
+
+/* Card hover lift */
+.card-hover {
+  transition: all 0.2s ease;
+}
+
+.card-hover:hover {
+  border-color: #D0E0FF !important;
+  box-shadow: 0 2px 12px rgba(76, 139, 245, 0.08);
+}
+
+/* Hidden scrollbar utility */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* NSG overlay styles */
+.nsg-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.15s ease;
+}
+
+.nsg-container {
+  background: #fff;
+  border-radius: 16px;
+  width: 420px;
+  max-width: 90vw;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.16);
+  animation: slideUp 0.2s ease;
+}
+
+.nsg-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 8px;
+}
+
+.nsg-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1D2129;
+}
+
+.nsg-close {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #86909C;
+  transition: background 0.15s;
+}
+
+.nsg-close:hover {
+  background: #F2F3F5;
+}
+
+.nsg-options {
+  padding: 4px 12px;
+}
+
+.nsg-option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.nsg-option-active {
+  background: #F7F8FA;
+}
+
+.nsg-option-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nsg-option-icon {
+  font-size: 16px;
+  color: #86909C;
+}
+
+.nsg-option-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  background: #F2F3F5;
+  color: #86909C;
+}
+
+.nsg-option-active .nsg-option-num {
+  background: #1D2129;
+  color: #fff;
+}
+
+.nsg-option-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.nsg-option-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1D2129;
+}
+
+.nsg-option-desc {
+  font-size: 11px;
+  color: #86909C;
+  margin-top: 1px;
+}
+
+.nsg-custom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  cursor: text;
+  transition: background 0.12s;
+}
+
+.nsg-custom-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 13px;
+  color: #1D2129;
+}
+
+.nsg-custom-send {
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: none;
+  background: #1D2129;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.nsg-custom-send:hover {
+  opacity: 0.85;
+}
+
+.nsg-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 20px 14px;
+}
+
+.nsg-shortcuts {
+  font-size: 11px;
+  color: #C9CDD4;
+}
+
+.nsg-skip {
+  font-size: 13px;
+  color: #86909C;
+  padding: 6px 14px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.nsg-skip:hover {
+  background: #F2F3F5;
+}
+
+/* Responsive: narrow viewport */
+@media (max-width: 900px) {
+  .sidebar-expanded {
+    display: none !important;
+  }
+}
+
+@media (max-width: 1100px) {
+  .detail-panel-responsive {
+    display: none !important;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
