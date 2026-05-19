@@ -127,13 +127,6 @@ const QUICK_PROMPTS = [
   '生成一份数据分析可视化方案',
 ]
 
-const TOOLBAR_ITEMS = [
-  { icon: <ThunderboltOutlined style={{ fontSize: 15 }} />, label: '快速' },
-  { icon: <FileTextOutlined style={{ fontSize: 15 }} />, label: '写作' },
-  { icon: <PictureOutlined style={{ fontSize: 15 }} />, label: '图像' },
-  { icon: <CodeOutlined style={{ fontSize: 15 }} />, label: '编程' },
-  { icon: <AppstoreOutlined style={{ fontSize: 15 }} />, label: '更多' },
-]
 
 const CLARIFICATION_STEPS: { question: string; choices: { id: string; label: string; description?: string }[] }[] = [
   {
@@ -1378,21 +1371,6 @@ export default function TwinAgent() {
                       <PlusOutlined style={{ fontSize: 16, color: '#1D2129' }} />
                     </button>
                   </Popover>
-                  <div style={{ width: 1, height: 16, background: '#E5E6EB', margin: '0 8px' }} className="shrink-0" />
-                  <div className="flex items-center shrink-0" style={{ gap: 2 }}>
-                    {TOOLBAR_ITEMS.map((item) => (
-                      <Tooltip key={item.label} title={item.label}>
-                        <button
-                          className="flex items-center shrink-0 rounded-[8px] hover:bg-[#F2F3F5] transition-colors"
-                          style={{ height: 32, gap: 4, padding: '0 8px' }}
-                          onClick={() => message.info(`${item.label} 功能开发中`)}
-                        >
-                          <span style={{ color: '#86909C', display: 'flex' }}>{item.icon}</span>
-                          <span style={{ fontSize: 12, fontWeight: 500, color: '#86909C', whiteSpace: 'nowrap' }}>{item.label}</span>
-                        </button>
-                      </Tooltip>
-                    ))}
-                  </div>
                 </div>
                 {input.trim() ? (
                   <button
