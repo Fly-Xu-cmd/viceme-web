@@ -239,7 +239,10 @@ export default function Sidebar() {
                       const agentCount = agents.filter(a => a.workspaceId === ws.id).length
                       return <>
                         {agentCount > 0 && (
-                          <span className="w-[18px] h-[18px] rounded-full bg-[#F2F3F5] text-[10px] text-text-tertiary flex items-center justify-center shrink-0 group-hover:hidden">
+                          <span
+                            className="rounded-full text-[10px] font-medium flex items-center justify-center shrink-0 group-hover:hidden"
+                            style={{ minWidth: 20, height: 20, padding: '0 5px', background: '#E5E6EB', color: '#6E7681' }}
+                          >
                             {agentCount}
                           </span>
                         )}

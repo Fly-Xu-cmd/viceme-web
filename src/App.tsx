@@ -12,7 +12,7 @@ const theme = {
     colorPrimary: '#4C8BF5',
     borderRadius: 8,
     fontFamily: `-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif`,
-    fontSize: 13,
+    fontSize: 14,
     colorBgContainer: '#FFFFFF',
     colorBorder: '#F0F1F3',
     colorBgLayout: '#F7F8FA',
@@ -22,6 +22,8 @@ const theme = {
 export default function App() {
   const settingsOpen = useStore((s) => s.settingsOpen)
   const agentHistoryOpen = useStore((s) => s.agentHistoryOpen)
+  const middleCollapsed = useStore((s) => s.middleCollapsed)
+  const detailVisible = useStore((s) => s.detailVisible)
 
   if (settingsOpen) {
     return (
@@ -33,15 +35,20 @@ export default function App() {
     )
   }
 
+  const showMiddleCollapsed = middleCollapsed && detailVisible
+
   return (
     <ConfigProvider locale={zhCN} theme={theme}>
-      <div className="flex h-screen w-screen overflow-hidden bg-bg-page" style={{ minWidth: 375 }}>
+      <div
+        className="flex h-screen w-screen overflow-hidden bg-bg-page"
+        style={{ minWidth: 375 }}
+      >
         <Sidebar />
         {agentHistoryOpen ? (
           <AgentHistoryPage />
         ) : (
           <>
-            <TwinAgent />
+            {!showMiddleCollapsed && <TwinAgent />}
             <DetailPanel />
           </>
         )}

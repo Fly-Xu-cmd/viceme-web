@@ -18,6 +18,9 @@ import {
   SearchOutlined,
   LinkOutlined,
   EyeOutlined,
+  ExpandOutlined,
+  CompressOutlined,
+  MenuUnfoldOutlined,
 } from '@ant-design/icons'
 import { useStore } from '../store'
 
@@ -149,14 +152,14 @@ const historyStatusColor = { success: '#00B42A', partial: '#FF7D00', failed: '#F
 const historyStatusLabel = { success: '完成', partial: '部分完成', failed: '失败' }
 
 export default function DetailPanel() {
-  const { agents, selectedAgentId, detailVisible, toggleDetail, pendingActivityModal, setPendingActivityModal, sidebarCollapsed, toggleSidebar, detailDefaultTab, setDetailDefaultTab, historyResults: storeHistoryResults, pendingHistoryId, setPendingHistoryId } = useStore()
+  const { agents, selectedAgentId, detailVisible, toggleDetail, pendingActivityModal, setPendingActivityModal, sidebarCollapsed, toggleSidebar, detailDefaultTab, setDetailDefaultTab, historyResults: storeHistoryResults, pendingHistoryId, setPendingHistoryId, middleCollapsed, setMiddleCollapsed } = useStore()
   const agent = agents.find((a) => a.id === selectedAgentId)
 
   const [activeTab, setActiveTab] = useState<DetailTab>('detail')
   const [expanded, setExpanded] = useState<Record<SectionKey, boolean>>({
-    activities: true,
+    activities: false,
     triggers: false,
-    plan: false,
+    plan: true,
     routes: false,
     checklist: false,
   })
@@ -167,17 +170,37 @@ export default function DetailPanel() {
   const [historyListOpen, setHistoryListOpen] = useState(false)
   const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null)
 
-  const [panelWidth, setPanelWidth] = useState(() => Math.round(window.innerWidth * 0.6))
+  const SIDEBAR_W = 240
+  const MIDDLE_MIN = 360
+  const MIDDLE_COLLAPSE_THRESHOLD = 200
+
+  const [panelWidth, setPanelWidth] = useState(() => Math.round(window.innerWidth * 0.4))
   const isDragging = useRef(false)
   const startX = useRef(0)
-  const startWidth = useRef(Math.round(window.innerWidth * 0.6))
+  const startWidth = useRef(Math.round(window.innerWidth * 0.4))
   const prevSidebarState = useRef(false)
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isDragging.current) return
     const delta = startX.current - e.clientX
-    const newWidth = Math.min(600, Math.max(240, startWidth.current + delta))
+    const maxW = window.innerWidth - 60
+    const newWidth = Math.min(maxW, Math.max(240, startWidth.current + delta))
     setPanelWidth(newWidth)
+
+    const store = useStore.getState()
+    const sidebarW = store.sidebarCollapsed ? 0 : SIDEBAR_W
+    const remaining = window.innerWidth - newWidth - sidebarW
+
+    if (!store.sidebarCollapsed && remaining < MIDDLE_MIN) {
+      store.toggleSidebar()
+    }
+
+    const widthRatio = newWidth / window.innerWidth
+    if (widthRatio > 0.7 && !store.middleCollapsed) {
+      store.setMiddleCollapsed(true)
+    } else if (widthRatio <= 0.7 && store.middleCollapsed) {
+      store.setMiddleCollapsed(false)
+    }
   }, [])
 
   const handleMouseUp = useCallback(() => {
@@ -221,6 +244,7 @@ export default function DetailPanel() {
       if (!prevSidebarState.current && useStore.getState().sidebarCollapsed) {
         useStore.getState().toggleSidebar()
       }
+      setMiddleCollapsed(false)
     }
   }, [detailVisible])
 
@@ -292,21 +316,6 @@ export default function DetailPanel() {
 
   const sections: { key: SectionKey; label: string; icon: React.ReactNode; count?: string | number; content: React.ReactNode }[] = [
     {
-      key: 'activities',
-      label: '元数据',
-      icon: <HistoryOutlined style={{ fontSize: 14 }} />,
-      content: (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-          <MetaRow label="模型" value={agent.model} />
-          <MetaRow label="状态" value={<span style={{ color: statusColor[agent.status] }}>{statusText[agent.status]}</span>} />
-          <MetaRow label="总运行" value={`${agent.totalRuns} 次`} />
-          <MetaRow label="最近使用" value={agent.lastUsed} />
-          <MetaRow label="能力标签" value={agent.capabilities.join('、')} />
-          {agent.workspaceId && <MetaRow label="Workspace" value={agent.workspaceId} />}
-        </div>
-      ),
-    },
-    {
       key: 'plan',
       label: '系统提示词',
       icon: <ApartmentOutlined style={{ fontSize: 14 }} />,
@@ -333,12 +342,16 @@ export default function DetailPanel() {
               <span className="text-[11px] text-text-tertiary">暂无活动记录</span>
             </div>
           ) : (
-            agent.activities.slice(0, 8).map((act) => (
+            agent.activities.slice(0, 8).map((act, actIdx) => (
               <div
                 key={act.id}
                 className="rounded-[8px] hover:bg-[#F7F8FA] cursor-pointer transition-colors"
                 style={{ padding: '10px 10px' }}
-                onClick={() => setModalData({ title: act.action, content: renderActivityModalContent(act) })}
+                onClick={() => {
+                  handleTabChange('history')
+                  const target = allHistoryResults[actIdx]
+                  if (target) setSelectedHistoryId(target.id)
+                }}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 min-w-0">
@@ -353,6 +366,21 @@ export default function DetailPanel() {
               </div>
             ))
           )}
+        </div>
+      ),
+    },
+    {
+      key: 'activities',
+      label: '元数据',
+      icon: <HistoryOutlined style={{ fontSize: 14 }} />,
+      content: (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+          <MetaRow label="模型" value={agent.model} />
+          <MetaRow label="状态" value={<span style={{ color: statusColor[agent.status] }}>{statusText[agent.status]}</span>} />
+          <MetaRow label="总运行" value={`${agent.totalRuns} 次`} />
+          <MetaRow label="最近使用" value={agent.lastUsed} />
+          <MetaRow label="能力标签" value={agent.capabilities.join('、')} />
+          {agent.workspaceId && <MetaRow label="Workspace" value={agent.workspaceId} />}
         </div>
       ),
     },
@@ -405,15 +433,29 @@ export default function DetailPanel() {
 
   return (
     <>
-      <div className="detail-panel-responsive flex shrink-0 overflow-hidden relative">
+      <div className={`detail-panel-responsive flex overflow-hidden relative ${middleCollapsed ? 'flex-1' : 'shrink-0'}`}>
         {/* Main detail panel */}
-        <div className="flex flex-col bg-bg-white border-l border-border shrink-0 overflow-hidden relative" style={{ width: panelWidth }}>
+        <div className="flex flex-col bg-bg-white border-l border-border overflow-hidden relative" style={middleCollapsed ? { flex: 1 } : { width: panelWidth, flexShrink: 0 }}>
           <div className="detail-resize-handle" onMouseDown={handleResizeStart} />
 
           {/* Header: Tabs + Actions */}
           <div className="shrink-0 border-b border-border" style={{ height: 52, padding: '0 12px' }}>
             <div className="flex items-center justify-between h-full">
               <div className="flex items-center gap-0.5">
+                {middleCollapsed && (
+                  <Tooltip title="展开对话区域">
+                    <button
+                      onClick={() => {
+                        setMiddleCollapsed(false)
+                        const newWidth = Math.min(panelWidth, window.innerWidth - MIDDLE_MIN)
+                        setPanelWidth(newWidth)
+                      }}
+                      className="w-7 h-7 rounded-[6px] flex items-center justify-center hover:bg-[#F2F3F5] transition-colors text-text-secondary mr-1"
+                    >
+                      <MenuUnfoldOutlined style={{ fontSize: 14 }} />
+                    </button>
+                  </Tooltip>
+                )}
                 <button
                   onClick={() => handleTabChange('detail')}
                   className="flex items-center gap-1.5 rounded-lg transition-colors"
@@ -469,6 +511,23 @@ export default function DetailPanel() {
                     className="w-7 h-7 rounded-[6px] flex items-center justify-center hover:bg-[#F2F3F5] transition-colors text-text-tertiary"
                   >
                     <CopyOutlined style={{ fontSize: 13 }} />
+                  </button>
+                </Tooltip>
+                <Tooltip title={middleCollapsed ? '还原布局' : '居中展示'}>
+                  <button
+                    onClick={() => {
+                      if (middleCollapsed) {
+                        setMiddleCollapsed(false)
+                        const newWidth = Math.min(panelWidth, window.innerWidth - MIDDLE_MIN)
+                        setPanelWidth(newWidth)
+                      } else {
+                        if (!sidebarCollapsed) toggleSidebar()
+                        setMiddleCollapsed(true)
+                      }
+                    }}
+                    className="w-7 h-7 rounded-[6px] flex items-center justify-center hover:bg-[#F2F3F5] transition-colors text-text-tertiary"
+                  >
+                    {middleCollapsed ? <CompressOutlined style={{ fontSize: 13 }} /> : <ExpandOutlined style={{ fontSize: 13 }} />}
                   </button>
                 </Tooltip>
                 <Tooltip title="关闭">

@@ -64,6 +64,8 @@ interface AppStore {
   setSettingsOpen: (v: boolean) => void
   agentHistoryOpen: boolean
   setAgentHistoryOpen: (v: boolean) => void
+  middleCollapsed: boolean
+  setMiddleCollapsed: (v: boolean) => void
 
   pendingActivityModal: { agentId: string; activityId: string } | null
   setPendingActivityModal: (data: { agentId: string; activityId: string } | null) => void
@@ -296,6 +298,8 @@ export const useStore = create<AppStore>((set, get) => ({
   setSettingsOpen: (v) => set({ settingsOpen: v, agentHistoryOpen: false }),
   agentHistoryOpen: false,
   setAgentHistoryOpen: (v) => set({ agentHistoryOpen: v, settingsOpen: false }),
+  middleCollapsed: false,
+  setMiddleCollapsed: (v) => set({ middleCollapsed: v }),
 
   pendingActivityModal: null,
   setPendingActivityModal: (data) => set({ pendingActivityModal: data }),

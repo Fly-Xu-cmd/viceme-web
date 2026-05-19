@@ -751,160 +751,19 @@ export default function TwinAgent() {
   }
 
   const renderPlan = (plan: WorkflowPlan) => (
-    <div style={{ marginTop: 14, marginBottom: 4 }}>
-      <div style={{ padding: '4px 0' }}>
-        {plan.steps.map((step, i) => {
-          const isLast = i === plan.steps.length - 1
-          return (
-            <div key={i} className="flex" style={{ minHeight: 44 }}>
-              <div className="flex flex-col items-center shrink-0" style={{ width: 24, marginRight: 10 }}>
-                <span
-                  className="w-[18px] h-[18px] rounded-full flex items-center justify-center shrink-0"
-                  style={{ background: '#F2F3F5', marginTop: 2 }}
-                >
-                  <span style={{ fontSize: 10, fontWeight: 700, color: '#86909C' }}>{i + 1}</span>
-                </span>
-                {!isLast && (
-                  <div style={{ width: 1.5, flex: 1, background: '#E5E6EB', marginTop: 2, marginBottom: 2 }} />
-                )}
-              </div>
-              <div style={{ paddingBottom: isLast ? 0 : 8, flex: 1, minWidth: 0 }}>
-                <div className="flex items-center gap-1.5">
-                  <span style={{ fontSize: 13, color: '#86909C', display: 'flex' }}>
-                    {STEP_ICONS[step.icon] || <SearchOutlined />}
-                  </span>
-                  <span style={{ fontSize: 14, fontWeight: 500, color: '#1D2129', lineHeight: 1.4 }}>{step.title}</span>
-                </div>
-                <div style={{ fontSize: 12, color: '#86909C', marginTop: 2, lineHeight: 1.5 }}>{step.description}</div>
-              </div>
-            </div>
-          )
-        })}
-      </div>
-
-      <div className="flex items-center gap-2" style={{ marginTop: 12, padding: '2px 2px 4px' }}>
-        <span style={{ fontSize: 12, color: '#86909C', background: '#F2F3F5', borderRadius: 6, padding: '4px 12px' }}>
-          预计耗时 {plan.estimatedTime}
-        </span>
-      </div>
-    </div>
+    <PlanTree plan={plan} />
   )
 
   const renderExecPanel = () => {
     if (execSteps.length === 0) return null
-
-    const isRunning = wsExec?.running ?? false
-    const doneCount = execSteps.filter(s => s.status === 'done').length
-
     return (
-      <div className="flex justify-start" style={{ margin: '8px 0' }}>
-        <div
-          style={{
-            maxWidth: '70%',
-            width: '100%',
-            borderRadius: 16,
-            background: '#FFFFFF',
-            border: '1px solid #F0F1F3',
-            padding: '18px 22px',
-          }}
-        >
-          <div className="flex items-center gap-2.5 mb-3">
-            <div
-              className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
-              style={{ background: 'linear-gradient(135deg, #6366F1, #8B5CF6)' }}
-            >
-              <SearchOutlined style={{ color: '#fff', fontSize: 11 }} />
-            </div>
-            <span style={{ fontSize: 16, fontWeight: 600, color: '#1D2129' }}>AI 调研进行中</span>
-            {isRunning && execProgress < 100 && (
-              <span style={{ fontSize: 12, color: '#86909C', marginLeft: 'auto' }}>
-                可离开页面，完成后通知你
-              </span>
-            )}
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            {execSteps.map((step, i) => (
-              <div
-                key={i}
-                className="flex items-center justify-between"
-                style={{ height: 40, padding: '0 10px' }}
-              >
-                <div className="flex items-center gap-2.5">
-                  {step.status === 'done' && (
-                    <span className="w-[18px] h-[18px] rounded-full flex items-center justify-center shrink-0" style={{ background: '#00B42A' }}>
-                      <span style={{ color: '#fff', fontSize: 10, fontWeight: 700 }}>✓</span>
-                    </span>
-                  )}
-                  {step.status === 'running' && (
-                    <span className="exec-step-running w-[18px] h-[18px] rounded-full border-2 border-[#4C8BF5] shrink-0" />
-                  )}
-                  {step.status === 'pending' && (
-                    <span className="w-[18px] h-[18px] rounded-full border-2 border-[#E5E6EB] shrink-0" />
-                  )}
-                  {step.status === 'error' && (
-                    <span className="w-[18px] h-[18px] rounded-full flex items-center justify-center shrink-0" style={{ background: '#F53F3F' }}>
-                      <span style={{ color: '#fff', fontSize: 10, fontWeight: 700 }}>!</span>
-                    </span>
-                  )}
-                  <span style={{
-                    fontSize: 14,
-                    color: step.status === 'running' ? '#1D2129' : step.status === 'done' ? '#6E7681' : '#C9CDD4',
-                    fontWeight: step.status === 'running' ? 500 : 400,
-                  }}>
-                    {step.title}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {execLogs.length > 0 && (
-            <div style={{ marginTop: 12 }}>
-              <button
-                onClick={() => setLogsExpanded(v => !v)}
-                className="flex items-center gap-1.5 hover:opacity-70 transition-opacity"
-                style={{ fontSize: 12, color: '#6E7681', background: 'none', border: 'none', cursor: 'pointer', padding: '6px 10px' }}
-              >
-                <RightOutlined style={{ fontSize: 9, transform: logsExpanded ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }} />
-                查看运行日志
-              </button>
-              {logsExpanded && (
-                <div style={{ borderLeft: '2px solid #E5E6EB', marginLeft: 12, paddingLeft: 12, marginTop: 4, maxHeight: 200, overflowY: 'auto' }}>
-                  {execLogs.map((log, i) => (
-                    <div key={i} style={{ fontSize: 12, color: '#6E7681', lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>{log}</div>
-                  ))}
-                  <div ref={logEndRef} />
-                </div>
-              )}
-            </div>
-          )}
-
-          <div className="flex items-center justify-between" style={{ marginTop: 14, padding: '0 10px' }}>
-            {isRunning && execProgress < 100 ? (
-              <button
-                onClick={handleReset}
-                style={{
-                  fontSize: 13,
-                  color: '#F53F3F',
-                  border: '1px solid #FFCDD2',
-                  background: 'transparent',
-                  borderRadius: 8,
-                  padding: '6px 16px',
-                  cursor: 'pointer',
-                }}
-              >
-                暂停
-              </button>
-            ) : (
-              <span />
-            )}
-            <span style={{ fontSize: 12, color: '#C9CDD4' }}>
-              {doneCount} / {execSteps.length}
-            </span>
-          </div>
-        </div>
-      </div>
+      <ExecTree
+        steps={execSteps}
+        logs={execLogs}
+        progress={execProgress}
+        running={wsExec?.running ?? false}
+        onReset={handleReset}
+      />
     )
   }
 
@@ -1066,7 +925,7 @@ export default function TwinAgent() {
               {sidebarCollapsed ? <MenuUnfoldOutlined style={{ fontSize: 14 }} /> : <MenuFoldOutlined style={{ fontSize: 14 }} />}
             </button>
           </Tooltip>
-          <h2 className="text-[14px] font-semibold text-text-primary tracking-tight truncate">
+          <h2 className="text-[15px] font-semibold text-text-primary tracking-tight truncate">
             {workspaces.find(w => w.id === selectedWorkspaceId)?.name || '新建对话'}
           </h2>
           {phase !== 'idle' && (
@@ -1162,10 +1021,10 @@ export default function TwinAgent() {
         <div style={{ width: '100%', maxWidth: 720, display: 'flex', flexDirection: 'column', gap: 16 }}>
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center flex-1" style={{ paddingTop: 100 }}>
-              <h2 style={{ fontSize: 28, fontWeight: 700, color: '#1D2129', marginBottom: 8 }}>
+              <h2 style={{ fontSize: 32, fontWeight: 700, color: '#1D2129', marginBottom: 10 }}>
                 我可以为你做什么？
               </h2>
-              <p style={{ fontSize: 14, color: '#86909C', marginBottom: 48 }}>
+              <p style={{ fontSize: 16, color: '#86909C', marginBottom: 48 }}>
                 描述你的任务，AI 智能体为你高效完成
               </p>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, auto)', gap: '14px 18px', justifyContent: 'center' }}>
@@ -1177,8 +1036,8 @@ export default function TwinAgent() {
                       background: '#F7F8FA',
                       border: '1px solid #F0F1F3',
                       borderRadius: 999,
-                      padding: '10px 22px',
-                      fontSize: 14,
+                      padding: '12px 24px',
+                      fontSize: 15,
                       fontWeight: 400,
                       color: '#4E5969',
                       cursor: 'pointer',
@@ -1206,21 +1065,20 @@ export default function TwinAgent() {
           {messages.map((msg) => (
             <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div style={{
-                maxWidth: (msg.type === 'plan' || msg.type === 'result') ? '100%' : '80%',
-                width: (msg.type === 'plan' || msg.type === 'result') ? '100%' : undefined,
+                maxWidth: msg.type === 'result' ? '66%' : msg.type === 'plan' ? '80%' : '80%',
               }}>
                 <div
                   className="whitespace-pre-wrap"
                   style={{
-                    padding: (msg.type === 'plan' || msg.type === 'result') ? '16px 20px' : '10px 16px',
-                    fontSize: 14,
-                    lineHeight: 1.7,
+                    padding: (msg.type === 'plan' || msg.type === 'result') ? '18px 22px' : '12px 18px',
+                    fontSize: 15,
+                    lineHeight: 1.75,
                     ...(msg.role === 'user'
                       ? { background: '#F2F3F5', borderRadius: '18px 18px 4px 18px', color: '#1D2129' }
                       : { borderRadius: '18px 18px 18px 4px', color: '#1D2129' }),
                   }}
                 >
-                  {msg.content}
+                  {msg.role === 'agent' ? <RichContent text={msg.content} /> : msg.content}
                   {msg.options && renderOptionCard(msg.options)}
                   {msg.plan && renderPlan(msg.plan)}
                   {msg.researchResult && renderResearchResult(msg.researchResult, msg.historyResultId)}
@@ -1740,4 +1598,323 @@ function InlineGuideCard({
       </div>
     </div>
   )
+}
+
+function PlanTree({ plan }: { plan: WorkflowPlan }) {
+  const [expandedSteps, setExpandedSteps] = useState<Set<number>>(() => new Set())
+
+  const toggleStep = (idx: number) => {
+    setExpandedSteps(prev => {
+      const next = new Set(prev)
+      if (next.has(idx)) next.delete(idx)
+      else next.add(idx)
+      return next
+    })
+  }
+
+  return (
+    <div style={{ marginTop: 14, marginBottom: 4 }}>
+      <div style={{ padding: '4px 0' }}>
+        {plan.steps.map((step, i) => {
+          const isLast = i === plan.steps.length - 1
+          const isExpanded = expandedSteps.has(i)
+          return (
+            <div key={i} className="flex" style={{ minHeight: 36 }}>
+              <div className="flex flex-col items-center shrink-0" style={{ width: 24, marginRight: 10 }}>
+                <span
+                  className="w-[18px] h-[18px] rounded-full flex items-center justify-center shrink-0"
+                  style={{ background: '#F2F3F5', marginTop: 2 }}
+                >
+                  <span style={{ fontSize: 10, fontWeight: 700, color: '#86909C' }}>{i + 1}</span>
+                </span>
+                {!isLast && (
+                  <div style={{ width: 1.5, flex: 1, background: '#E5E6EB', marginTop: 2, marginBottom: 2 }} />
+                )}
+              </div>
+              <div style={{ paddingBottom: isLast ? 0 : 4, flex: 1, minWidth: 0 }}>
+                <div
+                  className="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={() => toggleStep(i)}
+                  style={{ userSelect: 'none' }}
+                >
+                  <RightOutlined
+                    style={{
+                      fontSize: 9,
+                      color: '#C9CDD4',
+                      transform: isExpanded ? 'rotate(90deg)' : 'none',
+                      transition: 'transform 0.15s',
+                    }}
+                  />
+                  <span style={{ fontSize: 13, color: '#86909C', display: 'flex' }}>
+                    {STEP_ICONS[step.icon] || <SearchOutlined />}
+                  </span>
+                  <span style={{ fontSize: 15, fontWeight: 500, color: '#1D2129', lineHeight: 1.4 }}>{step.title}</span>
+                </div>
+                {isExpanded && (
+                  <div style={{ fontSize: 12, color: '#86909C', marginTop: 4, marginLeft: 22, lineHeight: 1.6, paddingBottom: 4 }}>
+                    {step.description}
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <div className="flex items-center gap-2" style={{ marginTop: 12, padding: '2px 2px 4px' }}>
+        <button
+          onClick={() => {
+            if (expandedSteps.size === plan.steps.length) {
+              setExpandedSteps(new Set())
+            } else {
+              setExpandedSteps(new Set(plan.steps.map((_, i) => i)))
+            }
+          }}
+          className="hover:opacity-80 transition-opacity"
+          style={{ fontSize: 12, color: '#4C8BF5', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0' }}
+        >
+          {expandedSteps.size === plan.steps.length ? '全部折叠' : '全部展开'}
+        </button>
+        <span style={{ fontSize: 12, color: '#86909C', background: '#F2F3F5', borderRadius: 6, padding: '4px 12px' }}>
+          预计耗时 {plan.estimatedTime}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+function ExecTree({
+  steps,
+  logs,
+  progress,
+  running,
+  onReset,
+}: {
+  steps: ExecStep[]
+  logs: string[]
+  progress: number
+  running: boolean
+  onReset: () => void
+}) {
+  const [expandedIdx, setExpandedIdx] = useState<Set<number>>(new Set())
+  const logEndRef = useRef<HTMLDivElement>(null)
+
+  const doneCount = steps.filter(s => s.status === 'done').length
+
+  const toggleStep = (idx: number) => {
+    setExpandedIdx(prev => {
+      const next = new Set(prev)
+      if (next.has(idx)) next.delete(idx)
+      else next.add(idx)
+      return next
+    })
+  }
+
+  const getStepLogs = (stepIdx: number) => {
+    let logOffset = 0
+    for (let i = 0; i < stepIdx; i++) {
+      logOffset += steps[i].logs.length
+    }
+    return logs.slice(logOffset, logOffset + steps[stepIdx].logs.length)
+  }
+
+  useEffect(() => {
+    logEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [logs.length])
+
+  return (
+    <div className="flex justify-start" style={{ margin: '8px 0' }}>
+      <div
+        style={{
+          maxWidth: '70%',
+          width: '100%',
+          borderRadius: 16,
+          background: '#FFFFFF',
+          border: '1px solid #F0F1F3',
+          padding: '18px 22px',
+        }}
+      >
+        <div className="flex items-center gap-2.5 mb-3">
+          <div
+            className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
+            style={{ background: 'linear-gradient(135deg, #6366F1, #8B5CF6)' }}
+          >
+            <SearchOutlined style={{ color: '#fff', fontSize: 11 }} />
+          </div>
+          <span style={{ fontSize: 18, fontWeight: 600, color: '#1D2129' }}>AI 调研进行中</span>
+          {running && progress < 100 && (
+            <span style={{ fontSize: 12, color: '#86909C', marginLeft: 'auto' }}>
+              可离开页面，完成后通知你
+            </span>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+          {steps.map((step, i) => {
+            const isExpanded = expandedIdx.has(i)
+            const stepLogs = getStepLogs(i)
+            const isClickable = step.status === 'done' || step.status === 'running'
+            const isLast = i === steps.length - 1
+
+            return (
+              <div key={i}>
+                <div
+                  className={`flex items-center gap-2.5 ${isClickable ? 'cursor-pointer hover:bg-[#F7F8FA]' : ''} rounded-lg transition-colors`}
+                  style={{ minHeight: 40, padding: '0 10px' }}
+                  onClick={isClickable ? () => toggleStep(i) : undefined}
+                >
+                  <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                    {step.status === 'done' && (
+                      <span className="w-[18px] h-[18px] rounded-full flex items-center justify-center shrink-0" style={{ background: '#00B42A' }}>
+                        <span style={{ color: '#fff', fontSize: 10, fontWeight: 700 }}>✓</span>
+                      </span>
+                    )}
+                    {step.status === 'running' && (
+                      <span className="exec-step-running w-[18px] h-[18px] rounded-full border-2 border-[#4C8BF5] shrink-0" />
+                    )}
+                    {step.status === 'pending' && (
+                      <span className="w-[18px] h-[18px] rounded-full border-2 border-[#E5E6EB] shrink-0" />
+                    )}
+                    {step.status === 'error' && (
+                      <span className="w-[18px] h-[18px] rounded-full flex items-center justify-center shrink-0" style={{ background: '#F53F3F' }}>
+                        <span style={{ color: '#fff', fontSize: 10, fontWeight: 700 }}>!</span>
+                      </span>
+                    )}
+                    <span style={{
+                      fontSize: 15,
+                      color: step.status === 'running' ? '#1D2129' : step.status === 'done' ? '#6E7681' : '#C9CDD4',
+                      fontWeight: step.status === 'running' ? 500 : 400,
+                    }}>
+                      {step.title}
+                    </span>
+                  </div>
+                  {isClickable && (
+                    <RightOutlined
+                      style={{
+                        fontSize: 9,
+                        color: '#C9CDD4',
+                        transform: isExpanded ? 'rotate(90deg)' : 'none',
+                        transition: 'transform 0.15s',
+                        flexShrink: 0,
+                      }}
+                    />
+                  )}
+                </div>
+                {isExpanded && stepLogs.length > 0 && (
+                  <div style={{
+                    borderLeft: '2px solid #E5E6EB',
+                    marginLeft: 19,
+                    paddingLeft: 16,
+                    marginBottom: 4,
+                    maxHeight: 160,
+                    overflowY: 'auto',
+                  }}>
+                    {stepLogs.map((log, j) => (
+                      <div key={j} style={{ fontSize: 11, color: '#86909C', lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>{log}</div>
+                    ))}
+                  </div>
+                )}
+                {!isLast && step.status !== 'pending' && (
+                  <div style={{ width: 1.5, height: 4, background: '#E5E6EB', marginLeft: 18 }} />
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        <div className="flex items-center justify-between" style={{ marginTop: 14, padding: '0 10px' }}>
+          {running && progress < 100 ? (
+            <button
+              onClick={onReset}
+              style={{
+                fontSize: 13,
+                color: '#F53F3F',
+                border: '1px solid #FFCDD2',
+                background: 'transparent',
+                borderRadius: 8,
+                padding: '6px 16px',
+                cursor: 'pointer',
+              }}
+            >
+              暂停
+            </button>
+          ) : (
+            <span />
+          )}
+          <span style={{ fontSize: 12, color: '#C9CDD4' }}>
+            {doneCount} / {steps.length}
+          </span>
+        </div>
+        <div ref={logEndRef} />
+      </div>
+    </div>
+  )
+}
+
+function RichContent({ text }: { text: string }) {
+  const lines = text.split('\n')
+
+  return (
+    <>
+      {lines.map((line, i) => {
+        const trimmed = line.trim()
+
+        if (!trimmed) return <div key={i} style={{ height: 8 }} />
+
+        if (/^\d+\.\s\*\*/.test(trimmed)) {
+          const match = trimmed.match(/^(\d+)\.\s\*\*(.+?)\*\*(.*)$/)
+          if (match) {
+            return (
+              <div key={i} style={{ marginTop: i > 0 ? 6 : 0 }}>
+                <span style={{ fontSize: 15, fontWeight: 600, color: '#1D2129' }}>
+                  {match[1]}. {match[2]}
+                </span>
+                {match[3] && <span>{renderInline(match[3])}</span>}
+              </div>
+            )
+          }
+        }
+
+        if (/^\*\*(.+?)\*\*/.test(trimmed) && !trimmed.startsWith('-')) {
+          const boldMatch = trimmed.match(/^\*\*(.+?)\*\*(.*)$/)
+          if (boldMatch) {
+            return (
+              <div key={i} style={{ fontSize: 16, fontWeight: 600, color: '#1D2129', marginTop: i > 0 ? 8 : 0, marginBottom: 2 }}>
+                {boldMatch[1]}
+                {boldMatch[2] && <span style={{ fontWeight: 400, fontSize: 15 }}>{renderInline(boldMatch[2])}</span>}
+              </div>
+            )
+          }
+        }
+
+        if (/^[-•]\s/.test(trimmed)) {
+          return (
+            <div key={i} style={{ paddingLeft: 12, marginTop: 3 }}>
+              <span style={{ color: '#86909C', marginRight: 6 }}>•</span>
+              {renderInline(trimmed.replace(/^[-•]\s/, ''))}
+            </div>
+          )
+        }
+
+        return <div key={i}>{renderInline(line)}</div>
+      })}
+    </>
+  )
+}
+
+function renderInline(text: string): React.ReactNode {
+  const parts = text.split(/(\*\*.*?\*\*|\`.*?\`)/)
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={i} style={{ fontWeight: 600, color: '#1D2129' }}>{part.slice(2, -2)}</strong>
+    }
+    if (part.startsWith('`') && part.endsWith('`')) {
+      return (
+        <code key={i} style={{ background: '#F2F3F5', padding: '1px 6px', borderRadius: 4, fontSize: 13, fontFamily: 'monospace', color: '#4C8BF5' }}>
+          {part.slice(1, -1)}
+        </code>
+      )
+    }
+    return <span key={i}>{part}</span>
+  })
 }

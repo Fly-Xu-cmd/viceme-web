@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { message, Avatar } from 'antd'
 import {
-  CloseOutlined,
+  LeftOutlined,
   UserOutlined,
   RightOutlined,
   LockOutlined,
@@ -103,19 +103,22 @@ export default function SettingsPage() {
 
   return (
     <div className="flex flex-col h-full w-full bg-white relative">
-      {/* Close button */}
-      <button
-        onClick={() => setSettingsOpen(false)}
-        className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full flex items-center justify-center hover:bg-[#F2F3F5] transition-colors"
-      >
-        <CloseOutlined style={{ fontSize: 16, color: '#86909C' }} />
-      </button>
+      {/* Header with back button */}
+      <div className="sticky top-0 z-10 flex items-center h-[56px] px-4 bg-white/80 backdrop-blur-md">
+        <button
+          onClick={() => setSettingsOpen(false)}
+          className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-[#F2F3F5] transition-colors"
+        >
+          <LeftOutlined style={{ fontSize: 16, color: '#1D2129' }} />
+        </button>
+        <span className="flex-1 text-center text-[17px] font-semibold text-[#1D2129] pr-8">设置</span>
+      </div>
 
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto flex justify-center scroll-fade">
         <div style={{ width: '100%', maxWidth: 520, padding: '0 24px' }}>
           {/* User profile header */}
-          <div className="flex flex-col items-center" style={{ padding: '52px 0 28px' }}>
+          <div className="flex flex-col items-center" style={{ padding: '24px 0 28px' }}>
             <Avatar
               size={80}
               icon={<UserOutlined style={{ fontSize: 36 }} />}
