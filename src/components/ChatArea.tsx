@@ -123,50 +123,64 @@ export default function ChatArea() {
             </div>
           )}
           {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div style={{ maxWidth: '85%' }}>
-                <div
-                  className="whitespace-pre-wrap"
-                  style={{
-                    padding: '12px 16px',
-                    fontSize: 13,
-                    lineHeight: 1.7,
-                    borderRadius: 16,
-                    ...(msg.role === 'user'
-                      ? { background: '#F2F3F5', borderBottomRightRadius: 4, color: '#1D2129' }
-                      : { background: '#FFFFFF', border: '1px solid #F0F1F3', borderBottomLeftRadius: 4, color: '#1D2129' }),
-                  }}
-                >
-                  {msg.content}
+            <div key={msg.id}>
+              {msg.role === 'user' ? (
+                <div className="flex justify-end">
+                  <div style={{ maxWidth: '85%' }}>
+                    <div
+                      className="whitespace-pre-wrap"
+                      style={{
+                        padding: '12px 16px',
+                        fontSize: 13,
+                        lineHeight: 1.7,
+                        borderRadius: 16,
+                        borderBottomRightRadius: 4,
+                        background: '#F2F3F5',
+                        color: '#1D2129',
+                      }}
+                    >
+                      {msg.content}
+                    </div>
+                    <div className="flex items-center mt-1.5 justify-end" style={{ gap: 2 }}>
+                      <span style={{ fontSize: 11, color: '#86909C' }}>{msg.timestamp}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className={`flex items-center mt-1.5 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`} style={{ gap: 2 }}>
-                  <span style={{ fontSize: 11, color: '#86909C', marginRight: 6 }}>{msg.timestamp}</span>
-                  {msg.role === 'agent' && (
-                    <>
-                      <Tooltip title="复制"><button onClick={() => handleCopy(msg.content)} className="w-6 h-6 rounded-[4px] flex items-center justify-center hover:bg-[#F2F3F5] transition-colors text-text-tertiary"><CopyOutlined style={{ fontSize: 12 }} /></button></Tooltip>
-                      <Tooltip title="重新生成"><button onClick={() => message.info('重新生成中…')} className="w-6 h-6 rounded-[4px] flex items-center justify-center hover:bg-[#F2F3F5] transition-colors text-text-tertiary"><ReloadOutlined style={{ fontSize: 12 }} /></button></Tooltip>
-                      <Tooltip title="有帮助"><button onClick={() => message.success('感谢反馈')} className="w-6 h-6 rounded-[4px] flex items-center justify-center hover:bg-[#F2F3F5] transition-colors text-text-tertiary"><LikeOutlined style={{ fontSize: 12 }} /></button></Tooltip>
-                      <Tooltip title="没帮助"><button onClick={() => message.info('已记录反馈')} className="w-6 h-6 rounded-[4px] flex items-center justify-center hover:bg-[#F2F3F5] transition-colors text-text-tertiary"><DislikeOutlined style={{ fontSize: 12 }} /></button></Tooltip>
-                    </>
+              ) : (
+                <div style={{ width: '100%' }}>
+                  <div
+                    className="whitespace-pre-wrap"
+                    style={{
+                      fontSize: 14,
+                      lineHeight: 1.8,
+                      color: '#1D2129',
+                      padding: '4px 0',
+                    }}
+                  >
+                    {msg.content}
+                  </div>
+                  <div className="flex items-center mt-2" style={{ gap: 2 }}>
+                    <span style={{ fontSize: 11, color: '#86909C', marginRight: 6 }}>{msg.timestamp}</span>
+                    <Tooltip title="复制"><button onClick={() => handleCopy(msg.content)} className="w-6 h-6 rounded-[4px] flex items-center justify-center hover:bg-[#F2F3F5] transition-colors text-text-tertiary"><CopyOutlined style={{ fontSize: 12 }} /></button></Tooltip>
+                    <Tooltip title="重新生成"><button onClick={() => message.info('重新生成中…')} className="w-6 h-6 rounded-[4px] flex items-center justify-center hover:bg-[#F2F3F5] transition-colors text-text-tertiary"><ReloadOutlined style={{ fontSize: 12 }} /></button></Tooltip>
+                    <Tooltip title="有帮助"><button onClick={() => message.success('感谢反馈')} className="w-6 h-6 rounded-[4px] flex items-center justify-center hover:bg-[#F2F3F5] transition-colors text-text-tertiary"><LikeOutlined style={{ fontSize: 12 }} /></button></Tooltip>
+                    <Tooltip title="没帮助"><button onClick={() => message.info('已记录反馈')} className="w-6 h-6 rounded-[4px] flex items-center justify-center hover:bg-[#F2F3F5] transition-colors text-text-tertiary"><DislikeOutlined style={{ fontSize: 12 }} /></button></Tooltip>
+                  </div>
+                  {msg.id === messages[messages.length - 1]?.id && (
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {suggestions.map((s) => (
+                        <Tag
+                          key={s}
+                          onClick={() => { setInput(s); }}
+                          className="!rounded-full !px-3 !py-1 !text-[12px] !border-border !text-text-secondary !bg-white hover:!bg-[#F2F3F5] !cursor-pointer !transition-colors !m-0"
+                        >
+                          {s}
+                        </Tag>
+                      ))}
+                    </div>
                   )}
                 </div>
-                {msg.role === 'agent' && msg.id === messages[messages.length - 1]?.id && (
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {suggestions.map((s) => (
-                      <Tag
-                        key={s}
-                        onClick={() => { setInput(s); }}
-                        className="!rounded-full !px-3 !py-1 !text-[12px] !border-border !text-text-secondary !bg-white hover:!bg-[#F2F3F5] !cursor-pointer !transition-colors !m-0"
-                      >
-                        {s}
-                      </Tag>
-                    ))}
-                  </div>
-                )}
-              </div>
+              )}
             </div>
           ))}
           <div ref={messagesEndRef} />

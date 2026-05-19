@@ -64,3 +64,17 @@ export interface WorkspaceExecution {
   running: boolean
   startedAt: number
 }
+
+export interface HistoryResultItem {
+  id: string
+  title: string
+  personName: string
+  time: string
+  status: 'success' | 'partial' | 'failed'
+  contactCount: number
+  platformCount: number
+  duration: string
+  summary: string
+  topChannels: { rank: number; name: string; reason: string }[]
+  contacts: { type: string; value: string }[]
+}

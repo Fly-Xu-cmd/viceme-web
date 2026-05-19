@@ -3,12 +3,15 @@ import { Input, Tooltip, message, Modal, notification, Popover } from 'antd'
 import { useStore } from '../store'
 import {
   ReloadOutlined,
+  CopyOutlined,
+  LikeOutlined,
+  DislikeOutlined,
+  EllipsisOutlined,
   ThunderboltOutlined,
   CheckCircleFilled,
   LoadingOutlined,
   ExclamationCircleFilled,
   RocketOutlined,
-  EyeOutlined,
   FileTextOutlined,
   CloseOutlined,
   PlusOutlined,
@@ -19,6 +22,8 @@ import {
   AppstoreOutlined,
   ArrowUpOutlined,
   CodeOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
   GlobalOutlined,
   SearchOutlined,
   LinkOutlined,
@@ -30,6 +35,7 @@ import {
   MailOutlined,
   MobileOutlined,
   ScanOutlined,
+  DownOutlined,
   NotificationOutlined,
   CloudOutlined,
   FolderOpenOutlined,
@@ -50,6 +56,7 @@ interface TwinMessage {
   options?: OptionCard
   plan?: WorkflowPlan
   researchResult?: ResearchResult
+  historyResultId?: string
 }
 
 interface OptionCard {
@@ -265,6 +272,9 @@ export default function TwinAgent() {
     addAgentActivity, updateAgentActivity, updateAgentStatus,
     executions, startExecution: storeStartExecution, cancelExecution, clearExecution,
     isLoggedIn, mockLogin, showLoginModal, setShowLoginModal, loginSource,
+    sidebarCollapsed, toggleSidebar,
+    addHistoryResult,
+    agents, selectAgent,
   } = useStore()
 
   const wsExec = executions[selectedWorkspaceId]
@@ -289,7 +299,10 @@ export default function TwinAgent() {
   const [codeSending, setCodeSending] = useState(false)
   const [countdown, setCountdown] = useState(0)
   const [codeError, setCodeError] = useState(false)
+  const [agreeChecked, setAgreeChecked] = useState(false)
+  const [notionPending, setNotionPending] = useState(false)
   const [plusPopoverOpen, setPlusPopoverOpen] = useState(false)
+  const [agentPopoverOpen, setAgentPopoverOpen] = useState(false)
   const codeInputRefs = useRef<(HTMLInputElement | null)[]>([])
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -497,11 +510,14 @@ export default function TwinAgent() {
   }
 
   const handleLogin = () => {
+    if (!agreeChecked) {
+      message.warning('请先阅读并同意用户协议、隐私政策')
+      return
+    }
     mockLogin()
+    setShowLoginModal(false)
     if (loginSource === 'build') {
-      setLoginStep('notion')
-    } else {
-      setShowLoginModal(false)
+      setNotionPending(true)
     }
   }
 
@@ -515,6 +531,10 @@ export default function TwinAgent() {
   const isPhoneValid = /^1[3-9]\d{9}$/.test(phoneNumber.trim())
 
   const handleSendCode = () => {
+    if (!agreeChecked) {
+      message.warning('请先阅读并同意用户协议、隐私政策')
+      return
+    }
     if (!isPhoneValid) return
     setCodeSending(true)
     setTimeout(() => {
@@ -543,10 +563,9 @@ export default function TwinAgent() {
       if (fullCode === '123456') {
         message.success('验证成功')
         mockLogin()
+        setShowLoginModal(false)
         if (loginSource === 'build') {
-          setLoginStep('notion')
-        } else {
-          setShowLoginModal(false)
+          setNotionPending(true)
         }
       } else {
         setCodeError(true)
@@ -579,10 +598,9 @@ export default function TwinAgent() {
       if (pasted === '123456') {
         message.success('验证成功')
         mockLogin()
+        setShowLoginModal(false)
         if (loginSource === 'build') {
-          setLoginStep('notion')
-        } else {
-          setShowLoginModal(false)
+          setNotionPending(true)
         }
       } else {
         setCodeError(true)
@@ -636,10 +654,26 @@ export default function TwinAgent() {
       updateAgentStatus(agentId, 'online')
 
       const result = buildMockResult(capturedTask)
+      const historyId = uid()
+      addHistoryResult({
+        id: historyId,
+        title: `${result.personName} 调研`,
+        personName: result.personName,
+        time: ts(),
+        status: 'success',
+        contactCount: result.contactCount,
+        platformCount: result.socialPlatformCount,
+        duration: result.duration,
+        summary: result.summary,
+        topChannels: result.topChannels,
+        contacts: result.contacts,
+      })
+
       const resultMsg: TwinMessage = {
         id: uid(), timestamp: ts(), role: 'agent',
-        content: '调研完毕，以下是你的调研报告：',
+        content: result.summary,
         type: 'result', researchResult: result,
+        historyResultId: historyId,
       }
 
       const store = useStore.getState()
@@ -881,89 +915,45 @@ export default function TwinAgent() {
     )
   }
 
-  const renderResearchResult = (result: ResearchResult) => (
-    <div style={{ marginTop: 16, marginBottom: 4, display: 'flex', flexDirection: 'column', gap: 14 }}>
-      {/* Layer 1: 信息速览 */}
-      <div className="rounded-xl bg-white" style={{ padding: '20px 22px', border: '1px solid #F0F1F3' }}>
-        <div className="flex items-center gap-2 mb-4">
-          <CheckCircleFilled style={{ color: '#00B42A', fontSize: 18 }} />
-          <span className="text-[15px] font-semibold text-[#00B42A]">调研完成</span>
-          <span className="text-[12px] text-text-tertiary ml-auto">耗时 {result.duration}</span>
-        </div>
+  const handleViewResultDetail = (historyResultId?: string) => {
+    if (currentAgentId) {
+      const { selectAgent, setDetailDefaultTab, setPendingHistoryId } = useStore.getState()
+      selectAgent(currentAgentId)
+      setDetailDefaultTab('history')
+      if (historyResultId) {
+        setPendingHistoryId(historyResultId)
+      }
+    }
+  }
 
-        <div className="grid grid-cols-3 gap-3" style={{ marginBottom: 18 }}>
-          <div className="bg-white border border-[#F0F1F3] rounded-lg text-center" style={{ padding: '14px 12px' }}>
-            <div className="text-[22px] font-bold text-text-primary">{result.contactCount}</div>
-            <div className="text-[11px] text-text-tertiary mt-0.5">联系方式</div>
-          </div>
-          <div className="bg-white border border-[#F0F1F3] rounded-lg text-center" style={{ padding: '14px 12px' }}>
-            <div className="text-[22px] font-bold text-text-primary">{result.socialPlatformCount}</div>
-            <div className="text-[11px] text-text-tertiary mt-0.5">社交平台</div>
-          </div>
-          <div className="bg-white border border-[#F0F1F3] rounded-lg text-center" style={{ padding: '14px 12px' }}>
-            <div className="text-[22px] font-bold text-brand">{result.researchDepth}</div>
-            <div className="text-[11px] text-text-tertiary mt-0.5">调研深度</div>
-          </div>
-        </div>
-
-        <div>
-          <div className="text-[13px] font-semibold text-text-primary" style={{ marginBottom: 10 }}>TOP 3 最优触达渠道</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {result.topChannels.map(ch => (
-              <div key={ch.rank} className="flex items-start gap-2.5 bg-white border border-[#F0F1F3] rounded-lg" style={{ padding: '12px 14px' }}>
-                <span className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[11px] font-bold" style={{
-                  background: ch.rank === 1 ? '#FFD700' : ch.rank === 2 ? '#C0C0C0' : '#CD7F32',
-                  color: '#fff',
-                }}>
-                  {ch.rank}
-                </span>
-                <div>
-                  <div className="text-[13px] font-medium text-text-primary">{ch.name}</div>
-                  <div className="text-[11px] text-text-secondary mt-0.5">{ch.reason}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Layer 2: Notion 文档入口 */}
-      <div className="rounded-xl bg-white border border-border" style={{ padding: '16px 20px' }}>
+  const renderResearchResult = (result: ResearchResult, historyResultId?: string) => (
+    <div style={{ marginTop: 8 }}>
+      {/* 概述入口卡片 */}
+      <div
+        className="rounded-xl bg-white hover:bg-[#FAFBFC] cursor-pointer transition-all group"
+        style={{ padding: '16px 20px', border: '1px solid #F0F1F3', marginTop: 12 }}
+        onClick={() => handleViewResultDetail(historyResultId)}
+      >
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <FileTextOutlined style={{ fontSize: 16, color: '#4C8BF5' }} />
+          <div className="flex items-center gap-2.5">
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+              style={{ background: 'linear-gradient(135deg, #00B42A, #34D399)' }}
+            >
+              <CheckCircleFilled style={{ color: '#fff', fontSize: 14 }} />
+            </div>
             <div>
-              <div className="text-[13px] font-medium text-text-primary">完整人物档案</div>
-              <div className="text-[11px] text-text-tertiary">中英双语结构化 Notion 文档</div>
+              <div className="text-[13px] font-semibold text-text-primary">{result.personName} · 调研报告</div>
+              <div className="text-[11px] text-text-tertiary mt-0.5">
+                {result.contactCount} 种联系方式 · {result.socialPlatformCount} 个社交平台 · 耗时 {result.duration}
+              </div>
             </div>
           </div>
-          <button
-            onClick={() => message.info('Notion 文档跳转功能开发中')}
-            className="flex items-center gap-2 rounded-lg bg-brand text-white text-[13px] font-medium hover:bg-brand-hover transition-colors"
-            style={{ padding: '8px 18px' }}
-          >
-            <EyeOutlined style={{ fontSize: 14 }} /> 查看文档
-          </button>
+          <RightOutlined
+            className="group-hover:translate-x-0.5 transition-transform"
+            style={{ fontSize: 11, color: '#C9CDD4' }}
+          />
         </div>
-      </div>
-
-      {/* Layer 3: 运行日志（可选展开） */}
-      <div className="rounded-xl bg-white" style={{ padding: '14px 18px', border: '1px solid #F0F1F3' }}>
-        <button
-          onClick={() => setLogsExpanded(v => !v)}
-          className="flex items-center gap-1.5 w-full hover:opacity-70 transition-opacity"
-          style={{ fontSize: 13, color: '#6E7681', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}
-        >
-          <RightOutlined style={{ fontSize: 9, transform: logsExpanded ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }} />
-          AI 全网检索运行日志
-        </button>
-        {logsExpanded && (
-          <div style={{ borderLeft: '2px solid #E5E6EB', marginLeft: 4, paddingLeft: 12, marginTop: 8, maxHeight: 200, overflowY: 'auto' }}>
-            {execLogs.map((log, i) => (
-              <div key={i} style={{ fontSize: 12, color: '#6E7681', lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>{log}</div>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   )
@@ -989,11 +979,33 @@ export default function TwinAgent() {
     dismissed: false,
   } : null
 
-  const bottomGuide = activeOptionCard || planningGuide || completedGuide
+  const notionGuide: OptionCard | null = notionPending ? {
+    question: '授权 Notion 以存储调研结果',
+    choices: [
+      { id: 'auth-notion', label: '一键授权 Notion', description: '调研结果将自动生成为结构化 Notion 文档' },
+      { id: 'skip-notion', label: '暂时跳过', description: '结果将以页面形式展示' },
+    ],
+    allowCustom: false,
+    dismissed: false,
+  } : null
+
+  const bottomGuide = activeOptionCard || notionGuide || planningGuide || completedGuide
 
   const handleBottomSelect = (choiceId: string, label: string) => {
     if (activeOptionCard) {
       handleOptionSelect(choiceId, label)
+      return
+    }
+
+    if (notionGuide) {
+      setNotionPending(false)
+      addMessage({ role: 'user', content: label, type: 'text' })
+      if (choiceId === 'auth-notion') {
+        message.success('Notion 授权成功')
+      } else {
+        message.info('跳过授权，结果将以页面形式展示')
+      }
+      setTimeout(() => startExecution(), 300)
       return
     }
 
@@ -1036,6 +1048,10 @@ export default function TwinAgent() {
   const handleBottomSkip = () => {
     if (activeOptionCard) {
       handleDismissCard()
+    } else if (notionGuide) {
+      setNotionPending(false)
+      message.info('跳过授权，结果将以页面形式展示')
+      setTimeout(() => startExecution(), 300)
     } else {
       setGuideAnswered(true)
     }
@@ -1049,10 +1065,17 @@ export default function TwinAgent() {
         style={{ height: 52, padding: '0 20px' }}
       >
         <div className="flex items-center gap-2.5">
-          <div className="w-6 h-6 rounded-[7px] bg-gradient-to-br from-[#6366F1] to-[#8B5CF6] flex items-center justify-center">
-            <RocketOutlined style={{ color: '#fff', fontSize: 12 }} />
-          </div>
-          <h2 className="text-[14px] font-semibold text-text-primary tracking-tight">Viceme</h2>
+          <Tooltip title={sidebarCollapsed ? '展开侧栏' : '收起侧栏'}>
+            <button
+              onClick={toggleSidebar}
+              className="w-7 h-7 rounded-[6px] flex items-center justify-center hover:bg-[#F2F3F5] transition-colors text-text-secondary"
+            >
+              {sidebarCollapsed ? <MenuUnfoldOutlined style={{ fontSize: 14 }} /> : <MenuFoldOutlined style={{ fontSize: 14 }} />}
+            </button>
+          </Tooltip>
+          <h2 className="text-[14px] font-semibold text-text-primary tracking-tight truncate">
+            {workspaces.find(w => w.id === selectedWorkspaceId)?.name || '新建对话'}
+          </h2>
           {phase !== 'idle' && (
             <span
               className="text-[11px] px-2.5 py-0.5 rounded-full font-medium"
@@ -1068,25 +1091,76 @@ export default function TwinAgent() {
           )}
         </div>
         <div className="flex items-center gap-1">
-          <Tooltip title="下载移动端 App">
-            <button
-              onClick={() => message.info('移动端 App 即将上线，敬请期待')}
-              className="flex items-center gap-1.5 rounded-lg text-[12px] font-medium hover:opacity-85 transition-opacity"
-              style={{ padding: '5px 12px', background: '#F0F0FF', color: '#6366F1', border: '1px solid #E0E0FF' }}
-            >
-              <MobileOutlined style={{ fontSize: 14 }} />
-              <span>下载 App</span>
-            </button>
-          </Tooltip>
-          {phase !== 'idle' && (
-            <button
-              onClick={handleReset}
-              className="flex items-center gap-1.5 rounded-lg text-[12px] text-text-tertiary hover:text-text-secondary hover:bg-[#F2F3F5] transition-colors"
-              style={{ padding: '6px 12px' }}
-            >
-              <ReloadOutlined style={{ fontSize: 12 }} /> 新调研
-            </button>
+          {!isLoggedIn && (
+            <Tooltip title="下载移动端 App">
+              <button
+                onClick={() => message.info('移动端 App 即将上线，敬请期待')}
+                className="flex items-center gap-1.5 rounded-lg text-[12px] font-medium hover:opacity-85 transition-opacity"
+                style={{ padding: '5px 12px', background: '#F0F0FF', color: '#6366F1', border: '1px solid #E0E0FF' }}
+              >
+                <MobileOutlined style={{ fontSize: 14 }} />
+                <span>下载 App</span>
+              </button>
+            </Tooltip>
           )}
+          {(() => {
+            const wsAgents = agents.filter(a => a.workspaceId === selectedWorkspaceId)
+            if (wsAgents.length === 0) return null
+            return (
+              <Popover
+                open={agentPopoverOpen}
+                onOpenChange={setAgentPopoverOpen}
+                trigger="click"
+                placement="bottomRight"
+                arrow={false}
+                overlayInnerStyle={{ padding: 6, borderRadius: 12 }}
+                content={
+                  <div style={{ width: 220 }}>
+                    <div className="flex items-center justify-between" style={{ padding: '6px 8px 8px' }}>
+                      <span className="text-[12px] font-semibold text-text-primary">Workspace Agents</span>
+                      <span className="text-[10px] text-text-tertiary">{wsAgents.length} 个</span>
+                    </div>
+                    {wsAgents.map(a => (
+                      <button
+                        key={a.id}
+                        className="w-full flex items-center gap-2.5 rounded-lg hover:bg-[#F2F3F5] transition-colors text-left"
+                        style={{ padding: '8px 8px' }}
+                        onClick={() => {
+                          setAgentPopoverOpen(false)
+                          selectAgent(a.id)
+                        }}
+                      >
+                        <span
+                          className="w-7 h-7 rounded-md flex items-center justify-center shrink-0 text-[10px] font-bold"
+                          style={{
+                            background: a.status === 'online' ? '#4C8BF5' : a.status === 'busy' ? '#FF7D00' : '#E8E8E8',
+                            color: a.status === 'offline' ? '#6E7681' : '#fff',
+                          }}
+                        >
+                          {a.avatar.slice(0, 2)}
+                        </span>
+                        <div className="flex flex-col min-w-0 flex-1">
+                          <span className="text-[12px] font-medium text-text-primary truncate">{a.name}</span>
+                          <span className="text-[10px] text-text-tertiary truncate">{a.status === 'busy' ? '执行中' : a.status === 'online' ? '在线' : '离线'}</span>
+                        </div>
+                        <span
+                          className="w-1.5 h-1.5 rounded-full shrink-0"
+                          style={{ background: a.status === 'online' ? '#00B42A' : a.status === 'busy' ? '#FF7D00' : '#C9CDD4' }}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                }
+              >
+                <button
+                  className="flex items-center gap-1.5 rounded-lg text-[12px] text-text-tertiary hover:text-text-secondary hover:bg-[#F2F3F5] transition-colors"
+                  style={{ padding: '6px 12px' }}
+                >
+                  <TeamOutlined style={{ fontSize: 13 }} /> Agents <span className="text-[10px] text-text-quaternary">{wsAgents.length}</span>
+                </button>
+              </Popover>
+            )
+          })()}
         </div>
       </div>
 
@@ -1150,16 +1224,65 @@ export default function TwinAgent() {
                     lineHeight: 1.7,
                     ...(msg.role === 'user'
                       ? { background: '#F2F3F5', borderRadius: '18px 18px 4px 18px', color: '#1D2129' }
-                      : { background: '#FFFFFF', border: '1px solid #F0F1F3', borderRadius: '18px 18px 18px 4px', color: '#1D2129' }),
+                      : { borderRadius: '18px 18px 18px 4px', color: '#1D2129' }),
                   }}
                 >
                   {msg.content}
                   {msg.options && renderOptionCard(msg.options)}
                   {msg.plan && renderPlan(msg.plan)}
-                  {msg.researchResult && renderResearchResult(msg.researchResult)}
+                  {msg.researchResult && renderResearchResult(msg.researchResult, msg.historyResultId)}
                 </div>
                 <div className={`flex items-center mt-1.5 ${msg.role === 'user' ? 'justify-end pr-1' : 'justify-start pl-1'}`}>
-                  <span style={{ fontSize: 11, color: '#C9CDD4' }}>{msg.timestamp}</span>
+                  <span style={{ fontSize: 11, color: '#C9CDD4', marginRight: msg.role === 'agent' ? 8 : 0 }}>{msg.timestamp}</span>
+                  {msg.role === 'agent' && (
+                    <>
+                      <Tooltip title="复制">
+                        <button
+                          onClick={() => { navigator.clipboard.writeText(msg.content); message.success('已复制到剪贴板') }}
+                          className="w-6 h-6 rounded flex items-center justify-center hover:bg-[#F2F3F5] transition-colors"
+                          style={{ color: '#C9CDD4' }}
+                        >
+                          <CopyOutlined style={{ fontSize: 12 }} />
+                        </button>
+                      </Tooltip>
+                      <Tooltip title="重新生成">
+                        <button
+                          onClick={() => message.info('重新生成中…')}
+                          className="w-6 h-6 rounded flex items-center justify-center hover:bg-[#F2F3F5] transition-colors"
+                          style={{ color: '#C9CDD4' }}
+                        >
+                          <ReloadOutlined style={{ fontSize: 12 }} />
+                        </button>
+                      </Tooltip>
+                      <Tooltip title="有帮助">
+                        <button
+                          onClick={() => message.success('感谢反馈')}
+                          className="w-6 h-6 rounded flex items-center justify-center hover:bg-[#F2F3F5] transition-colors"
+                          style={{ color: '#C9CDD4' }}
+                        >
+                          <LikeOutlined style={{ fontSize: 12 }} />
+                        </button>
+                      </Tooltip>
+                      <Tooltip title="没帮助">
+                        <button
+                          onClick={() => message.info('已记录反馈')}
+                          className="w-6 h-6 rounded flex items-center justify-center hover:bg-[#F2F3F5] transition-colors"
+                          style={{ color: '#C9CDD4' }}
+                        >
+                          <DislikeOutlined style={{ fontSize: 12 }} />
+                        </button>
+                      </Tooltip>
+                      <Tooltip title="更多">
+                        <button
+                          onClick={() => message.info('更多操作开发中')}
+                          className="w-6 h-6 rounded flex items-center justify-center hover:bg-[#F2F3F5] transition-colors"
+                          style={{ color: '#C9CDD4' }}
+                        >
+                          <EllipsisOutlined style={{ fontSize: 14 }} />
+                        </button>
+                      </Tooltip>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -1167,7 +1290,7 @@ export default function TwinAgent() {
 
           {typing && (
             <div className="flex justify-start">
-              <div className="px-4 py-3 bg-white border border-border rounded-2xl rounded-bl-[4px]">
+              <div className="px-4 py-3 rounded-2xl rounded-bl-[4px]">
                 <div className="flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-brand/60 animate-bounce" style={{ animationDelay: '0ms' }} />
                   <span className="w-2 h-2 rounded-full bg-brand/60 animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -1311,116 +1434,18 @@ export default function TwinAgent() {
         onCancel={() => setShowLoginModal(false)}
         footer={null}
         centered
-        width={400}
+        width={680}
         closable
         title={null}
+        className="login-modal"
+        styles={{ body: { padding: 0 } }}
       >
-        {loginStep === 'login' ? (
-          <div className="flex flex-col items-center" style={{ padding: '20px 0 8px' }}>
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#6366F1] to-[#8B5CF6] flex items-center justify-center mb-4">
-              <RocketOutlined style={{ color: '#fff', fontSize: 20 }} />
-            </div>
-            <h3 style={{ fontSize: 18, fontWeight: 600, color: '#1D2129', marginBottom: 4 }}>登录以启动调研</h3>
-            <p style={{ fontSize: 13, color: '#86909C', marginBottom: 24 }}>登录后即可开始 AI 全网调研</p>
-
-            <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <button
-                onClick={handleLogin}
-                className="flex items-center justify-center gap-2.5 w-full rounded-xl text-[14px] font-medium transition-colors hover:opacity-90"
-                style={{ background: '#07C160', color: '#fff', padding: '12px 0' }}
-              >
-                <WechatOutlined style={{ fontSize: 20 }} /> 微信登录
-              </button>
-              <button
-                onClick={handlePhoneLogin}
-                className="flex items-center justify-center gap-2.5 w-full rounded-xl text-[14px] font-medium border transition-colors hover:bg-[#F7F8FA]"
-                style={{ background: '#fff', color: '#1D2129', borderColor: '#E5E6EB', padding: '12px 0' }}
-              >
-                <MobileOutlined style={{ fontSize: 17 }} /> 手机短信验证码
-              </button>
-
-              <div className="flex items-center gap-3" style={{ margin: '4px 0' }}>
-                <div style={{ flex: 1, height: 1, background: '#E5E6EB' }} />
-                <span style={{ fontSize: 12, color: '#C9CDD4' }}>海外用户</span>
-                <div style={{ flex: 1, height: 1, background: '#E5E6EB' }} />
-              </div>
-
-              <div className="flex gap-3">
-                <button
-                  onClick={handleLogin}
-                  className="flex items-center justify-center gap-2 flex-1 rounded-xl text-[13px] font-medium border transition-colors hover:bg-[#F7F8FA]"
-                  style={{ background: '#fff', color: '#1D2129', borderColor: '#E5E6EB', padding: '11px 0' }}
-                >
-                  <GoogleOutlined style={{ fontSize: 16 }} /> Google
-                </button>
-                <button
-                  onClick={handleLogin}
-                  className="flex items-center justify-center gap-2 flex-1 rounded-xl text-[13px] font-medium border transition-colors hover:bg-[#F7F8FA]"
-                  style={{ background: '#fff', color: '#1D2129', borderColor: '#E5E6EB', padding: '11px 0' }}
-                >
-                  <AppleOutlined style={{ fontSize: 16 }} /> Apple
-                </button>
-                <button
-                  onClick={handleLogin}
-                  className="flex items-center justify-center gap-2 flex-1 rounded-xl text-[13px] font-medium border transition-colors hover:bg-[#F7F8FA]"
-                  style={{ background: '#fff', color: '#1D2129', borderColor: '#E5E6EB', padding: '11px 0' }}
-                >
-                  <MailOutlined style={{ fontSize: 16 }} /> 邮箱
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : loginStep === 'phone' ? (
-          <div className="flex flex-col items-center" style={{ padding: '20px 0 8px' }}>
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#6366F1] to-[#8B5CF6] flex items-center justify-center mb-4">
-              <MobileOutlined style={{ color: '#fff', fontSize: 20 }} />
-            </div>
-            <h3 style={{ fontSize: 18, fontWeight: 600, color: '#1D2129', marginBottom: 4 }}>手机号登录</h3>
-            <p style={{ fontSize: 13, color: '#86909C', marginBottom: 24 }}>输入手机号获取短信验证码</p>
-
-            <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div className="flex items-center gap-2 rounded-xl border border-[#E5E6EB] focus-within:border-[#4C8BF5] transition-colors" style={{ padding: '0 14px', height: 48 }}>
-                <span style={{ fontSize: 14, color: '#86909C', whiteSpace: 'nowrap' }}>+86</span>
-                <div style={{ width: 1, height: 20, background: '#E5E6EB' }} />
-                <input
-                  type="tel"
-                  value={phoneNumber}
-                  onChange={e => setPhoneNumber(e.target.value.replace(/\D/g, '').slice(0, 11))}
-                  onKeyDown={e => { if (e.key === 'Enter') handleSendCode() }}
-                  placeholder="请输入手机号"
-                  autoFocus
-                  className="flex-1 bg-transparent border-none outline-none"
-                  style={{ fontSize: 14, color: '#1D2129' }}
-                />
-              </div>
-              <button
-                onClick={handleSendCode}
-                disabled={codeSending || !isPhoneValid}
-                className="flex items-center justify-center gap-2 w-full rounded-xl text-[14px] font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                style={{ background: isPhoneValid && !codeSending ? '#4C8BF5' : '#C9CDD4', color: '#fff', padding: '12px 0' }}
-              >
-                {codeSending ? <LoadingOutlined style={{ fontSize: 16 }} /> : null}
-                {codeSending ? '发送中…' : '获取验证码'}
-              </button>
-              <button
-                onClick={() => setLoginStep('login')}
-                className="hover:text-text-primary transition-colors"
-                style={{ fontSize: 13, color: '#86909C', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0' }}
-              >
-                返回其他登录方式
-              </button>
-            </div>
-          </div>
-        ) : loginStep === 'code' ? (
-          <div className="flex flex-col items-center" style={{ padding: '20px 0 8px' }}>
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#6366F1] to-[#8B5CF6] flex items-center justify-center mb-4">
-              <SafetyCertificateOutlined style={{ color: '#fff', fontSize: 20 }} />
-            </div>
+        {loginStep === 'code' ? (
+          <div className="flex flex-col items-center" style={{ padding: '32px 24px 20px' }}>
             <h3 style={{ fontSize: 18, fontWeight: 600, color: '#1D2129', marginBottom: 4 }}>输入验证码</h3>
             <p style={{ fontSize: 13, color: '#86909C', marginBottom: 24 }}>
               验证码已发送至 <span style={{ color: '#1D2129', fontWeight: 500 }}>{phoneNumber.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2')}</span>
             </p>
-
             <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
               {verifyCode.map((digit, i) => (
                 <input
@@ -1435,36 +1460,25 @@ export default function TwinAgent() {
                   onPaste={i === 0 ? handleCodePaste : undefined}
                   className="text-center outline-none transition-all"
                   style={{
-                    width: 46,
-                    height: 52,
-                    borderRadius: 12,
+                    width: 46, height: 52, borderRadius: 12,
                     border: `2px solid ${codeError ? '#F53F3F' : digit ? '#4C8BF5' : '#E5E6EB'}`,
-                    fontSize: 22,
-                    fontWeight: 600,
-                    color: '#1D2129',
+                    fontSize: 22, fontWeight: 600, color: '#1D2129',
                     background: codeError ? '#FFF5F5' : '#FAFAFA',
                   }}
                 />
               ))}
             </div>
-
             {codeError && (
               <p style={{ fontSize: 13, color: '#F53F3F', marginBottom: 12 }}>
                 <ExclamationCircleFilled style={{ marginRight: 4 }} />验证码错误，请重新输入
               </p>
             )}
-
             <div className="flex items-center gap-3" style={{ marginBottom: 8 }}>
               {countdown > 0 ? (
                 <span style={{ fontSize: 13, color: '#C9CDD4' }}>{countdown}s 后可重新发送</span>
               ) : (
                 <button
-                  onClick={() => {
-                    setVerifyCode(['', '', '', '', '', ''])
-                    setCodeError(false)
-                    setCountdown(60)
-                    message.success('验证码已重新发送')
-                  }}
+                  onClick={() => { setVerifyCode(['', '', '', '', '', '']); setCodeError(false); setCountdown(60); message.success('验证码已重新发送') }}
                   className="hover:opacity-80 transition-opacity"
                   style={{ fontSize: 13, color: '#4C8BF5', background: 'none', border: 'none', cursor: 'pointer' }}
                 >
@@ -1472,42 +1486,103 @@ export default function TwinAgent() {
                 </button>
               )}
             </div>
-
             <button
-              onClick={() => setLoginStep('phone')}
+              onClick={() => setLoginStep('login')}
               className="hover:text-text-primary transition-colors"
               style={{ fontSize: 13, color: '#86909C', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0' }}
             >
-              修改手机号
+              返回登录
             </button>
           </div>
         ) : (
-          <div className="flex flex-col items-center" style={{ padding: '20px 0 8px' }}>
-            <div className="w-12 h-12 rounded-xl bg-[#000] flex items-center justify-center mb-4">
-              <span style={{ color: '#fff', fontSize: 22, fontWeight: 700 }}>N</span>
+          <div className="flex" style={{ minHeight: 390 }}>
+            <div className="flex-1 flex flex-col" style={{ padding: '40px 36px 32px' }}>
+              <h3 style={{ fontSize: 24, fontWeight: 700, color: '#1D2129', marginBottom: 36, lineHeight: 1.3 }}>
+                登录以解锁更多功能
+              </h3>
+
+              <div
+                className="flex items-center gap-3 rounded-xl border border-[#E5E6EB] focus-within:border-[#4C8BF5] transition-colors"
+                style={{ padding: '0 16px', height: 48, marginBottom: 16 }}
+              >
+                <div className="flex items-center gap-1.5 shrink-0 cursor-pointer select-none">
+                  <span style={{ fontSize: 15, color: '#1D2129', fontWeight: 500 }}>+86</span>
+                  <DownOutlined style={{ fontSize: 8, color: '#86909C' }} />
+                </div>
+                <input
+                  type="tel"
+                  value={phoneNumber}
+                  onChange={e => setPhoneNumber(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                  onKeyDown={e => { if (e.key === 'Enter') handleSendCode() }}
+                  placeholder="请输入手机号"
+                  autoFocus
+                  className="flex-1 bg-transparent border-none outline-none"
+                  style={{ fontSize: 14, color: '#1D2129' }}
+                />
+              </div>
+
+              <button
+                onClick={handleSendCode}
+                disabled={codeSending || !isPhoneValid}
+                className="w-full flex items-center justify-center transition-all"
+                style={{
+                  height: 48,
+                  borderRadius: 999,
+                  background: isPhoneValid && !codeSending ? '#1D2129' : '#E8E9EC',
+                  color: isPhoneValid && !codeSending ? '#fff' : '#9DA3AB',
+                  fontSize: 16,
+                  fontWeight: 500,
+                  border: 'none',
+                  cursor: isPhoneValid && !codeSending ? 'pointer' : 'default',
+                  marginBottom: 24,
+                }}
+              >
+                {codeSending ? <><LoadingOutlined style={{ fontSize: 16, marginRight: 8 }} /> 发送中…</> : '下一步'}
+              </button>
+
+              <label className="flex items-start gap-2 cursor-pointer select-none" style={{ marginBottom: 22 }}>
+                <input
+                  type="checkbox"
+                  checked={agreeChecked}
+                  onChange={e => setAgreeChecked(e.target.checked)}
+                  className="shrink-0"
+                  style={{ width: 15, height: 15, marginTop: 1, accentColor: '#4C8BF5', cursor: 'pointer' }}
+                />
+                <span style={{ fontSize: 12, color: '#86909C', lineHeight: 1.6 }}>
+                  已阅读并同意{' '}
+                  <span className="text-text-primary cursor-pointer hover:underline">用户协议</span>、
+                  <span className="text-text-primary cursor-pointer hover:underline">隐私政策</span>、
+                  <span className="text-text-primary cursor-pointer hover:underline">Viceme 服务须知</span>
+                </span>
+              </label>
+
+              <div style={{ textAlign: 'center' }}>
+                <button
+                  onClick={handleLogin}
+                  className="hover:opacity-80 transition-opacity"
+                  style={{ fontSize: 14, color: '#4C8BF5', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 500 }}
+                >
+                  微信一键登录
+                </button>
+              </div>
             </div>
-            <h3 style={{ fontSize: 18, fontWeight: 600, color: '#1D2129', marginBottom: 4 }}>授权 Notion</h3>
-            <p style={{ fontSize: 13, color: '#86909C', marginBottom: 24, textAlign: 'center', lineHeight: 1.6 }}>
-              调研结果将自动生成为结构化 Notion 文档，<br />请授权 Notion 访问权限
-            </p>
-            <button
-              onClick={handleNotionAuth}
-              className="flex items-center justify-center gap-2.5 w-full rounded-xl text-[14px] font-medium transition-colors hover:opacity-90"
-              style={{ background: '#1D2129', color: '#fff', padding: '12px 0' }}
+
+            <div
+              className="flex flex-col items-center justify-center shrink-0"
+              style={{ width: 280, padding: '32px 28px' }}
             >
-              <SafetyCertificateOutlined style={{ fontSize: 17 }} /> 一键授权 Notion
-            </button>
-            <button
-              onClick={() => {
-                setShowLoginModal(false)
-                message.info('跳过授权，结果将以页面形式展示')
-                setTimeout(() => startExecution(), 300)
-              }}
-              className="hover:text-text-primary transition-colors"
-              style={{ marginTop: 14, fontSize: 13, color: '#86909C', background: 'none', border: 'none', cursor: 'pointer', padding: '6px 16px' }}
-            >
-              暂时跳过
-            </button>
+              <div
+                className="flex items-center justify-center rounded-2xl"
+                style={{ width: 200, height: 200, border: '1px solid #F0F1F3', marginBottom: 16 }}
+              >
+                <div style={{ width: 160, height: 160, background: '#F2F3F5', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <ScanOutlined style={{ fontSize: 40, color: '#C9CDD4' }} />
+                </div>
+              </div>
+              <p style={{ fontSize: 13, color: '#86909C', textAlign: 'center' }}>
+                打开 Viceme App · <span style={{ color: '#4C8BF5', cursor: 'pointer' }}>点击扫一扫</span>
+              </p>
+            </div>
           </div>
         )}
       </Modal>

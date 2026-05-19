@@ -3,6 +3,9 @@ import zhCN from 'antd/locale/zh_CN'
 import Sidebar from './components/Sidebar'
 import TwinAgent from './components/TwinAgent'
 import DetailPanel from './components/DetailPanel'
+import SettingsPage from './components/SettingsPage'
+import AgentHistoryPage from './components/AgentHistoryPage'
+import { useStore } from './store'
 
 const theme = {
   token: {
@@ -17,12 +20,31 @@ const theme = {
 }
 
 export default function App() {
+  const settingsOpen = useStore((s) => s.settingsOpen)
+  const agentHistoryOpen = useStore((s) => s.agentHistoryOpen)
+
+  if (settingsOpen) {
+    return (
+      <ConfigProvider locale={zhCN} theme={theme}>
+        <div className="h-screen w-screen overflow-hidden bg-white" style={{ minWidth: 375 }}>
+          <SettingsPage />
+        </div>
+      </ConfigProvider>
+    )
+  }
+
   return (
     <ConfigProvider locale={zhCN} theme={theme}>
       <div className="flex h-screen w-screen overflow-hidden bg-bg-page" style={{ minWidth: 375 }}>
         <Sidebar />
-        <TwinAgent />
-        <DetailPanel />
+        {agentHistoryOpen ? (
+          <AgentHistoryPage />
+        ) : (
+          <>
+            <TwinAgent />
+            <DetailPanel />
+          </>
+        )}
       </div>
     </ConfigProvider>
   )

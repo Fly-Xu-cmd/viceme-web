@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Agent, AgentActivity, Workspace, Message, ExecStep, WorkspaceExecution, User } from './types'
+import type { Agent, AgentActivity, Workspace, Message, ExecStep, WorkspaceExecution, User, HistoryResultItem } from './types'
 
 const defaultReplies = [
   '收到你的任务，正在处理中…\n\n初步分析完成，以下是结果摘要：\n\n1. 任务目标已确认\n2. 数据采集完毕\n3. 分析报告生成中\n\n需要我继续深入分析吗？',
@@ -60,8 +60,21 @@ interface AppStore {
   toggleDetail: () => void
   setDetailVisible: (v: boolean) => void
 
+  settingsOpen: boolean
+  setSettingsOpen: (v: boolean) => void
+  agentHistoryOpen: boolean
+  setAgentHistoryOpen: (v: boolean) => void
+
   pendingActivityModal: { agentId: string; activityId: string } | null
   setPendingActivityModal: (data: { agentId: string; activityId: string } | null) => void
+
+  detailDefaultTab: 'detail' | 'history' | null
+  setDetailDefaultTab: (tab: 'detail' | 'history' | null) => void
+
+  historyResults: HistoryResultItem[]
+  addHistoryResult: (item: HistoryResultItem) => void
+  pendingHistoryId: string | null
+  setPendingHistoryId: (id: string | null) => void
 
   startExecution: (wsId: string, steps: ExecStep[], onComplete: () => void) => void
   cancelExecution: (wsId: string) => void
@@ -105,7 +118,10 @@ export const useStore = create<AppStore>((set, get) => ({
   executions: {},
 
   selectWorkspace: (id) => {
-    set({ selectedWorkspaceId: id })
+    const prev = get().selectedWorkspaceId
+    if (prev !== id) {
+      set({ selectedWorkspaceId: id, detailVisible: false })
+    }
   },
 
   createWorkspace: (name) => {
@@ -276,8 +292,23 @@ export const useStore = create<AppStore>((set, get) => ({
   toggleDetail: () => set((s) => ({ detailVisible: !s.detailVisible })),
   setDetailVisible: (v) => set({ detailVisible: v }),
 
+  settingsOpen: false,
+  setSettingsOpen: (v) => set({ settingsOpen: v, agentHistoryOpen: false }),
+  agentHistoryOpen: false,
+  setAgentHistoryOpen: (v) => set({ agentHistoryOpen: v, settingsOpen: false }),
+
   pendingActivityModal: null,
   setPendingActivityModal: (data) => set({ pendingActivityModal: data }),
+
+  detailDefaultTab: null,
+  setDetailDefaultTab: (tab) => set({ detailDefaultTab: tab }),
+
+  historyResults: [],
+  addHistoryResult: (item) => set((state) => ({
+    historyResults: [item, ...state.historyResults],
+  })),
+  pendingHistoryId: null,
+  setPendingHistoryId: (id) => set({ pendingHistoryId: id }),
 
   startExecution: async (wsId, steps, onComplete) => {
     cancelledExecs.delete(wsId)

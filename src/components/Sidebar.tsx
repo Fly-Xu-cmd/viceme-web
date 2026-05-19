@@ -3,8 +3,6 @@ import { Avatar, Badge, Tooltip, Input, message } from 'antd'
 import {
   PlusOutlined,
   SettingOutlined,
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
   UserOutlined,
   FolderOutlined,
   DownOutlined,
@@ -13,11 +11,9 @@ import {
   DeleteOutlined,
   EditOutlined,
   LoadingOutlined,
-  CrownOutlined,
-  BellOutlined,
-  GlobalOutlined,
-  InfoCircleOutlined,
   LogoutOutlined,
+  HistoryOutlined,
+  AppstoreOutlined,
 } from '@ant-design/icons'
 import { useStore } from '../store'
 
@@ -52,11 +48,14 @@ export default function Sidebar() {
     user,
     logout,
     setShowLoginModal,
+    setSettingsOpen,
+    setAgentHistoryOpen,
   } = useStore()
 
   const [wsExpanded, setWsExpanded] = useState(false)
   const [agentExpanded, setAgentExpanded] = useState(false)
-  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [toolbarOpen, setToolbarOpen] = useState(false)
+  const [authInfoOpen, setAuthInfoOpen] = useState(false)
 
   const [renamingWsId, setRenamingWsId] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
@@ -68,6 +67,7 @@ export default function Sidebar() {
 
   const handleNewConversation = () => {
     selectWorkspace('')
+    setAgentHistoryOpen(false)
   }
 
   const handleStartRename = (wsId: string, currentName: string) => {
@@ -84,60 +84,53 @@ export default function Sidebar() {
   }
 
   if (sidebarCollapsed) {
-    return (
-      <div className="flex flex-col items-center w-[56px] bg-bg-white border-r border-border gap-2 shrink-0" style={{ paddingTop: 18, paddingBottom: 16 }}>
-        <Tooltip title="展开侧栏" placement="right">
-          <button onClick={toggleSidebar} className="w-8 h-8 rounded-[8px] bg-brand flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity">
-            <span className="text-white text-[11px] font-bold">V</span>
-          </button>
-        </Tooltip>
-        <div className="flex-1" />
-        {isLoggedIn ? (
-          <Tooltip title="设置" placement="right">
-            <button className="w-9 h-9 rounded-[8px] flex items-center justify-center hover:bg-[#F2F3F5] transition-colors text-text-secondary">
-              <SettingOutlined style={{ fontSize: 16 }} />
-            </button>
-          </Tooltip>
-        ) : (
-          <Tooltip title="登录 / 注册" placement="right">
-            <button onClick={() => setShowLoginModal(true)} className="w-9 h-9 rounded-[8px] flex items-center justify-center hover:bg-[#F2F3F5] transition-colors text-text-tertiary">
-              <UserOutlined style={{ fontSize: 16 }} />
-            </button>
-          </Tooltip>
-        )}
-      </div>
-    )
+    return null
   }
 
   return (
     <>
-      <div className="sidebar-expanded flex flex-col w-[240px] bg-bg-white border-r border-border shrink-0">
+      <div className="sidebar-expanded flex flex-col w-[240px] bg-[#F7F8FA] border-r border-border shrink-0 transition-all duration-200">
         {/* Brand */}
-        <div className="flex items-center justify-between" style={{ padding: '18px 16px' }}>
+        <div className="flex items-center" style={{ padding: '18px 16px' }}>
           <div className="flex items-center gap-2.5">
             <div className="w-[28px] h-[28px] rounded-[8px] bg-brand flex items-center justify-center">
               <span className="text-white text-[11px] font-bold">V</span>
             </div>
             <span className="text-[15px] font-semibold text-text-primary tracking-tight">Viceme</span>
           </div>
-          <div className="flex items-center gap-1">
-            <Tooltip title="新建 Workspace">
-              <button onClick={handleNewConversation} className="w-7 h-7 rounded-[6px] flex items-center justify-center hover:bg-[#F2F3F5] transition-colors text-text-secondary">
-                <PlusOutlined style={{ fontSize: 13 }} />
-              </button>
-            </Tooltip>
-            <Tooltip title="收起">
-              <button onClick={toggleSidebar} className="w-7 h-7 rounded-[6px] flex items-center justify-center hover:bg-[#F2F3F5] transition-colors text-text-secondary">
-                <MenuFoldOutlined style={{ fontSize: 13 }} />
-              </button>
-            </Tooltip>
-          </div>
         </div>
 
+        {/* 新建 Workspace - 固定 */}
+        <div className="shrink-0" style={{ padding: '0 8px 4px' }}>
+          <button
+            onClick={handleNewConversation}
+            className="w-full flex items-center justify-center gap-2 transition-colors hover:opacity-90"
+            style={{ height: 38, borderRadius: 999, background: '#FFFFFF', border: '1px solid #E5E6EB' }}
+          >
+            <EditOutlined style={{ fontSize: 13, color: '#1D2129' }} />
+            <span className="text-[13px] font-semibold" style={{ color: '#1D2129' }}>新建 Workspace</span>
+          </button>
+        </div>
+
+        <div className="shrink-0" style={{ margin: '4px 16px', borderTop: '1px solid #F0F1F3' }} />
+
         <div className="flex-1 overflow-y-auto scroll-fade">
-          {/* Agents */}
+          {/* Agents 历史 */}
           <div style={{ padding: '0 8px' }}>
-            <div className="flex items-center justify-between" style={{ padding: '12px 8px' }}>
+            <button
+              onClick={() => setAgentHistoryOpen(true)}
+              className="w-full flex items-center gap-3 rounded-[8px] hover:bg-[#F2F3F5] transition-colors"
+              style={{ height: 40, padding: '0 8px' }}
+            >
+              <HistoryOutlined style={{ fontSize: 14, color: '#86909C' }} />
+              <span className="text-[13px] font-medium text-text-primary">Agents 历史</span>
+              {agents.length > 0 && <span className="text-[11px] text-text-tertiary ml-auto">{agents.length}</span>}
+            </button>
+          </div>
+
+          {/* 历史记录区 - Agents */}
+          <div style={{ padding: '0 8px' }}>
+            <div className="flex items-center justify-between" style={{ padding: '8px 8px' }}>
               <div className="flex items-center gap-1.5">
                 <span className="text-[12px] font-semibold text-text-tertiary">Agents</span>
                 {agents.length > 0 && <span className="text-[11px] text-text-tertiary">{agents.length}</span>}
@@ -197,18 +190,13 @@ export default function Sidebar() {
 
           <div style={{ margin: '4px 16px', borderTop: '1px solid #F0F1F3' }} />
 
-          {/* Workspaces */}
+          {/* 历史记录区 - Workspaces */}
           <div style={{ padding: '0 8px' }}>
-            <div className="flex items-center justify-between" style={{ padding: '12px 8px' }}>
+            <div className="flex items-center justify-between" style={{ padding: '12px 8px 8px' }}>
               <div className="flex items-center gap-1.5">
                 <span className="text-[12px] font-semibold text-text-tertiary">Workspaces</span>
                 {workspaces.length > 0 && <span className="text-[11px] text-text-tertiary">{workspaces.length}</span>}
               </div>
-              <Tooltip title="新建 Workspace">
-                <button onClick={handleNewConversation} className="w-5 h-5 rounded flex items-center justify-center hover:bg-[#F2F3F5] transition-colors text-text-tertiary">
-                  <PlusOutlined style={{ fontSize: 10 }} />
-                </button>
-              </Tooltip>
             </div>
             {workspaces.length === 0 ? (
               <div className="text-center" style={{ padding: '16px 8px' }}>
@@ -219,7 +207,7 @@ export default function Sidebar() {
                 {visibleWs.map((ws) => (
                   <div
                     key={ws.id}
-                    onClick={() => { if (renamingWsId !== ws.id) selectWorkspace(ws.id) }}
+                    onClick={() => { if (renamingWsId !== ws.id) { selectWorkspace(ws.id); setAgentHistoryOpen(false) } }}
                     className={`flex items-center gap-3 rounded-[8px] cursor-pointer transition-colors group ${
                       selectedWorkspaceId === ws.id ? 'bg-[#F2F3F5]' : 'hover:bg-[#F7F8FA]'
                     }`}
@@ -297,272 +285,227 @@ export default function Sidebar() {
             <div
               className="flex items-center gap-3 cursor-pointer hover:bg-[#F7F8FA] transition-colors"
               style={{ padding: '14px 16px 24px' }}
-              onClick={() => setSettingsOpen(v => !v)}
+              onClick={() => setToolbarOpen(v => !v)}
             >
               <Avatar size={32} icon={<UserOutlined />} style={{ backgroundColor: '#E8E8E8', color: '#6E7681' }} />
               <div className="flex flex-col min-w-0 flex-1">
                 <span className="text-[13px] font-medium truncate leading-tight">{user.name}</span>
                 <span className="text-[11px] text-text-tertiary leading-tight mt-0.5">{user.plan}</span>
               </div>
-              <button
-                className="w-7 h-7 rounded-[6px] flex items-center justify-center hover:bg-[#F2F3F5] transition-colors text-text-tertiary"
-                onClick={e => { e.stopPropagation(); setSettingsOpen(v => !v) }}
-              >
-                <SettingOutlined style={{ fontSize: 14 }} />
-              </button>
             </div>
           ) : (
             <div
               className="flex items-center gap-3 cursor-pointer hover:bg-[#F7F8FA] transition-colors"
               style={{ padding: '14px 16px 24px' }}
-              onClick={() => setShowLoginModal(true)}
+              onClick={() => setAuthInfoOpen(v => !v)}
             >
-              <Avatar size={32} icon={<UserOutlined />} style={{ backgroundColor: '#F2F3F5', color: '#C9CDD4' }} />
+              <div
+                className="w-[32px] h-[32px] rounded-full flex items-center justify-center shrink-0"
+                style={{ backgroundColor: '#FFF7E6', fontSize: 18 }}
+              >
+                🐵
+              </div>
               <div className="flex flex-col min-w-0 flex-1">
-                <span className="text-[13px] text-text-secondary leading-tight">未登录</span>
-                <span className="text-[11px] text-brand leading-tight mt-0.5 hover:underline">登录 / 注册</span>
+                <span className="text-[13px] text-text-secondary leading-tight">嘿，来聊聊？</span>
+                <span className="text-[11px] text-text-tertiary leading-tight mt-0.5">点击登录解锁更多</span>
               </div>
             </div>
+          )}
+
+          {toolbarOpen && isLoggedIn && (
+            <UserToolbar
+              isLoggedIn={isLoggedIn}
+              onClose={() => setToolbarOpen(false)}
+              onSettings={() => { setToolbarOpen(false); setSettingsOpen(true) }}
+              onAgentsHistory={() => { setToolbarOpen(false); setAgentHistoryOpen(true) }}
+              onLogout={() => { setToolbarOpen(false); logout(); setSettingsOpen(false) }}
+              onLogin={() => { setToolbarOpen(false); setShowLoginModal(true) }}
+            />
+          )}
+
+          {authInfoOpen && !isLoggedIn && (
+            <AuthInfoPanel
+              onClose={() => setAuthInfoOpen(false)}
+              onLogin={() => { setAuthInfoOpen(false); setShowLoginModal(true) }}
+            />
           )}
         </div>
       </div>
 
-      {settingsOpen && isLoggedIn && user && (
-        <UserSettingsPanel user={user} onClose={() => setSettingsOpen(false)} onLogout={() => { logout(); setSettingsOpen(false) }} />
-      )}
     </>
   )
 }
 
-type SettingsTab = 'account' | 'plan' | 'notification' | 'preference' | 'about'
-
-const SETTINGS_TABS: { key: SettingsTab; label: string; icon: React.ReactNode }[] = [
-  { key: 'account', label: '账号信息', icon: <UserOutlined style={{ fontSize: 14 }} /> },
-  { key: 'plan', label: '套餐与余额', icon: <CrownOutlined style={{ fontSize: 14 }} /> },
-  { key: 'notification', label: '通知设置', icon: <BellOutlined style={{ fontSize: 14 }} /> },
-  { key: 'preference', label: '偏好设置', icon: <GlobalOutlined style={{ fontSize: 14 }} /> },
-  { key: 'about', label: '关于', icon: <InfoCircleOutlined style={{ fontSize: 14 }} /> },
-]
-
-function UserSettingsPanel({ user, onClose, onLogout }: { user: import('../types').User; onClose: () => void; onLogout: () => void }) {
-  const [activeTab, setActiveTab] = useState<SettingsTab>('account')
-  const panelRef = useRef<HTMLDivElement>(null)
+function UserToolbar({
+  isLoggedIn,
+  onClose,
+  onSettings,
+  onAgentsHistory,
+  onLogout,
+  onLogin,
+}: {
+  isLoggedIn: boolean
+  onClose: () => void
+  onSettings: () => void
+  onAgentsHistory: () => void
+  onLogout: () => void
+  onLogin: () => void
+}) {
+  const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-        onClose()
-      }
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose()
     }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
   }, [onClose])
 
+  const itemClass =
+    'w-full flex items-center gap-2.5 rounded-lg text-left transition-colors hover:bg-[#F2F3F5] text-[13px]'
+  const itemStyle = { padding: '9px 12px', color: '#1D2129' }
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.25)' }}>
-      <div
-        ref={panelRef}
-        className="bg-white rounded-2xl overflow-hidden"
-        style={{
-          width: 580,
-          boxShadow: '0 16px 48px rgba(0,0,0,0.16), 0 4px 12px rgba(0,0,0,0.08)',
-          border: '1px solid #F0F1F3',
-        }}
+    <div
+      ref={ref}
+      className="absolute left-2 right-2 bg-white rounded-xl z-50"
+      style={{
+        bottom: '100%',
+        marginBottom: 6,
+        boxShadow: '0 8px 24px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)',
+        border: '1px solid #F0F1F3',
+        padding: '6px',
+      }}
+    >
+      {!isLoggedIn && (
+        <>
+          <button onClick={onLogin} className={itemClass} style={itemStyle}>
+            <UserOutlined style={{ fontSize: 14, color: '#86909C' }} />
+            登录 / 注册
+          </button>
+          <div style={{ margin: '4px 8px', borderTop: '1px solid #F0F1F3' }} />
+        </>
+      )}
+
+      <button onClick={onSettings} className={itemClass} style={itemStyle}>
+        <SettingOutlined style={{ fontSize: 14, color: '#86909C' }} />
+        设置
+      </button>
+      <button onClick={onAgentsHistory} className={itemClass} style={itemStyle}>
+        <HistoryOutlined style={{ fontSize: 14, color: '#86909C' }} />
+        Agents 历史
+      </button>
+
+      <div style={{ margin: '4px 8px', borderTop: '1px solid #F0F1F3' }} />
+
+      <button
+        onClick={() => { onClose(); message.info('移动端 APP 即将上线，敬请期待') }}
+        className={itemClass}
+        style={itemStyle}
       >
-        <div className="flex" style={{ height: 420 }}>
-        {/* Left tabs */}
-        <div className="flex flex-col shrink-0 bg-[#FAFAFA] border-r border-[#F0F1F3]" style={{ width: 160, padding: '16px 8px' }}>
-          {SETTINGS_TABS.map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className="flex items-center gap-2.5 rounded-lg transition-colors text-left"
-              style={{
-                padding: '10px 12px',
-                fontSize: 13,
-                fontWeight: activeTab === tab.key ? 500 : 400,
-                color: activeTab === tab.key ? '#1D2129' : '#6E7681',
-                background: activeTab === tab.key ? '#FFFFFF' : 'transparent',
-                boxShadow: activeTab === tab.key ? '0 1px 3px rgba(0,0,0,0.06)' : 'none',
-              }}
-            >
-              <span style={{ color: activeTab === tab.key ? '#4C8BF5' : '#86909C' }}>{tab.icon}</span>
-              {tab.label}
-            </button>
-          ))}
-          <div className="flex-1" />
-          <button
-            onClick={onLogout}
-            className="flex items-center gap-2.5 rounded-lg transition-colors text-left hover:bg-[#FFF5F5]"
-            style={{ padding: '10px 12px', fontSize: 13, color: '#F53F3F' }}
-          >
+        <AppstoreOutlined style={{ fontSize: 14, color: '#86909C' }} />
+        下载手机应用
+      </button>
+
+      {isLoggedIn && (
+        <>
+          <div style={{ margin: '4px 8px', borderTop: '1px solid #F0F1F3' }} />
+          <button onClick={onLogout} className={itemClass} style={{ ...itemStyle, color: '#F53F3F' }}>
             <LogoutOutlined style={{ fontSize: 14 }} />
             退出登录
           </button>
-        </div>
-
-        {/* Right content */}
-        <div className="flex-1 overflow-y-auto" style={{ padding: '20px 24px' }}>
-          {activeTab === 'account' && <AccountContent user={user} />}
-          {activeTab === 'plan' && <PlanContent user={user} />}
-          {activeTab === 'notification' && <NotificationContent />}
-          {activeTab === 'preference' && <PreferenceContent />}
-          {activeTab === 'about' && <AboutContent />}
-        </div>
-      </div>
-      </div>
+        </>
+      )}
     </div>
   )
 }
 
-function SettingsRow({ label, value, action }: { label: string; value: React.ReactNode; action?: React.ReactNode }) {
-  return (
-    <div className="flex items-center justify-between" style={{ padding: '12px 0', borderBottom: '1px solid #F7F8FA' }}>
-      <span className="text-[13px] text-text-secondary">{label}</span>
-      <div className="flex items-center gap-3">
-        <span className="text-[13px] text-text-primary font-medium">{value}</span>
-        {action}
-      </div>
-    </div>
-  )
-}
+const AUTH_FEATURES = [
+  { icon: '🔍', text: '启动 AI 深度调研任务' },
+  { icon: '📋', text: '生成结构化人物档案' },
+  { icon: '📝', text: '对接 Notion 自动存储报告' },
+  { icon: '📊', text: '查看完整调研运行日志' },
+]
 
-function SmallBtn({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) {
+function AuthInfoPanel({ onClose, onLogin }: { onClose: () => void; onLogin: () => void }) {
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose()
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [onClose])
+
   return (
-    <button
-      onClick={onClick || (() => message.info('功能开发中'))}
-      className="text-[12px] text-brand hover:text-brand-hover transition-colors"
-      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+    <div
+      ref={ref}
+      className="absolute left-2 right-2 bg-white rounded-xl z-50"
+      style={{
+        bottom: '100%',
+        marginBottom: 6,
+        boxShadow: '0 8px 24px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)',
+        border: '1px solid #F0F1F3',
+        padding: '20px 18px',
+      }}
     >
-      {children}
-    </button>
-  )
-}
-
-function AccountContent({ user }: { user: import('../types').User }) {
-  return (
-    <div>
-      <h3 style={{ fontSize: 16, fontWeight: 600, color: '#1D2129', marginBottom: 16 }}>账号信息</h3>
-      <SettingsRow label="昵称" value={user.name} action={<SmallBtn>修改</SmallBtn>} />
-      <SettingsRow label="手机号" value={user.phone || '未绑定'} action={<SmallBtn>{user.phone ? '换绑' : '绑定'}</SmallBtn>} />
-      <SettingsRow label="邮箱" value={user.email || '未绑定'} action={<SmallBtn>{user.email ? '换绑' : '绑定'}</SmallBtn>} />
-      <SettingsRow label="微信" value="已绑定" action={<SmallBtn>解绑</SmallBtn>} />
-      <SettingsRow label="注册时间" value={user.createdAt} />
-    </div>
-  )
-}
-
-function PlanContent({ user }: { user: import('../types').User }) {
-  const used = user.totalQuota - user.remainingQuota
-  return (
-    <div>
-      <h3 style={{ fontSize: 16, fontWeight: 600, color: '#1D2129', marginBottom: 16 }}>套餐与余额</h3>
-      <div className="rounded-xl bg-gradient-to-r from-[#6366F1] to-[#8B5CF6]" style={{ padding: '20px 22px', marginBottom: 20 }}>
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-white/80 text-[12px]">当前套餐</span>
-          <span className="text-white text-[12px] bg-white/20 rounded-full px-3 py-0.5">{user.plan}</span>
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-[32px] h-[32px] rounded-[8px] bg-brand flex items-center justify-center shrink-0">
+          <span className="text-white text-[12px] font-bold">V</span>
         </div>
-        <div className="text-white text-[28px] font-bold">{user.remainingQuota} <span className="text-[14px] font-normal text-white/70">次剩余</span></div>
-        <div className="text-white/60 text-[12px] mt-1">首次注册赠送 {user.totalQuota} 次完整调研额度</div>
-      </div>
-      <SettingsRow label="已使用" value={`${used} 次`} />
-      <SettingsRow label="总额度" value={`${user.totalQuota} 次`} />
-      <div style={{ marginTop: 16 }}>
-        <button
-          onClick={() => message.info('充值功能开发中')}
-          className="w-full flex items-center justify-center rounded-xl text-[14px] font-medium transition-colors hover:opacity-90"
-          style={{ background: '#4C8BF5', color: '#fff', padding: '11px 0' }}
-        >
-          充值额度
-        </button>
-      </div>
-    </div>
-  )
-}
-
-function NotificationContent() {
-  const [browser, setBrowser] = useState(true)
-  const [email, setEmail] = useState(false)
-  return (
-    <div>
-      <h3 style={{ fontSize: 16, fontWeight: 600, color: '#1D2129', marginBottom: 16 }}>通知设置</h3>
-      <div className="flex items-center justify-between" style={{ padding: '12px 0', borderBottom: '1px solid #F7F8FA' }}>
         <div>
-          <div className="text-[13px] text-text-primary font-medium">浏览器通知</div>
-          <div className="text-[11px] text-text-tertiary mt-1">调研完成时发送桌面通知</div>
+          <div className="text-[15px] font-semibold text-text-primary leading-tight">Viceme</div>
+          <div className="text-[12px] text-text-tertiary leading-tight mt-1">AI 全网人脉深度调研平台</div>
         </div>
-        <button
-          onClick={() => setBrowser(v => !v)}
-          className="rounded-full transition-colors"
-          style={{ width: 40, height: 22, background: browser ? '#4C8BF5' : '#E5E6EB', position: 'relative' }}
-        >
-          <span className="block rounded-full bg-white transition-transform" style={{ width: 18, height: 18, position: 'absolute', top: 2, left: browser ? 20 : 2 }} />
-        </button>
       </div>
-      <div className="flex items-center justify-between" style={{ padding: '12px 0', borderBottom: '1px solid #F7F8FA' }}>
-        <div>
-          <div className="text-[13px] text-text-primary font-medium">邮件通知</div>
-          <div className="text-[11px] text-text-tertiary mt-1">调研完成时发送邮件摘要</div>
-        </div>
-        <button
-          onClick={() => setEmail(v => !v)}
-          className="rounded-full transition-colors"
-          style={{ width: 40, height: 22, background: email ? '#4C8BF5' : '#E5E6EB', position: 'relative' }}
-        >
-          <span className="block rounded-full bg-white transition-transform" style={{ width: 18, height: 18, position: 'absolute', top: 2, left: email ? 20 : 2 }} />
-        </button>
-      </div>
-    </div>
-  )
-}
 
-function PreferenceContent() {
-  const [lang, setLang] = useState('zh')
-  return (
-    <div>
-      <h3 style={{ fontSize: 16, fontWeight: 600, color: '#1D2129', marginBottom: 16 }}>偏好设置</h3>
-      <div className="flex items-center justify-between" style={{ padding: '12px 0', borderBottom: '1px solid #F7F8FA' }}>
-        <span className="text-[13px] text-text-secondary">界面语言</span>
-        <div className="flex gap-2">
-          {[{ k: 'zh', l: '中文' }, { k: 'en', l: 'English' }].map(opt => (
-            <button
-              key={opt.k}
-              onClick={() => setLang(opt.k)}
-              className="rounded-lg text-[12px] transition-colors"
-              style={{
-                padding: '5px 14px',
-                background: lang === opt.k ? '#EFF5FF' : '#F7F8FA',
-                color: lang === opt.k ? '#4C8BF5' : '#6E7681',
-                fontWeight: lang === opt.k ? 500 : 400,
-              }}
-            >
-              {opt.l}
-            </button>
-          ))}
+      <div style={{ margin: '0 0 14px', borderTop: '1px solid #F0F1F3' }} />
+
+      <div className="text-[12px] text-text-tertiary font-medium mb-3" style={{ padding: '0 4px' }}>
+        登录后可使用以下功能
+      </div>
+      <div className="flex flex-col gap-0.5 mb-4">
+        {AUTH_FEATURES.map((f, i) => (
+          <div key={i} className="flex items-center gap-2.5" style={{ padding: '7px 4px' }}>
+            <span style={{ fontSize: 14 }}>{f.icon}</span>
+            <span className="text-[13px] text-text-secondary">{f.text}</span>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ margin: '0 0 14px', borderTop: '1px solid #F0F1F3' }} />
+
+      <div className="flex flex-col gap-2 mb-4" style={{ padding: '0 4px' }}>
+        <div className="flex items-center gap-2">
+          <span className="text-[12px] text-text-tertiary">主体：</span>
+          <span className="text-[12px] text-text-secondary">ViceMe Inc.</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[12px] text-text-tertiary">安全：</span>
+          <span className="text-[12px] text-text-secondary">数据加密存储，不共享第三方</span>
         </div>
       </div>
-      <SettingsRow label="调研报告语言" value="中英双语" action={<SmallBtn>修改</SmallBtn>} />
-      <SettingsRow label="默认调研档位" value="完整版" action={<SmallBtn>修改</SmallBtn>} />
-    </div>
-  )
-}
 
-function AboutContent() {
-  return (
-    <div>
-      <h3 style={{ fontSize: 16, fontWeight: 600, color: '#1D2129', marginBottom: 16 }}>关于 Viceme</h3>
-      <SettingsRow label="版本" value="V0.1 Beta" />
-      <SettingsRow label="更新日期" value="2026-05-18" />
-      <div style={{ marginTop: 20 }}>
-        <p className="text-[12px] text-text-tertiary" style={{ lineHeight: 1.8 }}>
-          Viceme 是面向创始人的 AI 全网人物深度调研工具。
-          一句话下达需求，自动完成人脉信息搜集、渠道分析、触达策略生成。
-        </p>
+      <button
+        onClick={onLogin}
+        className="w-full flex items-center justify-center text-[13px] transition-colors hover:bg-[#F2F3F5]"
+        style={{ background: '#F7F8FA', color: '#4C8BF5', padding: '10px 0', borderRadius: 8, border: '1px solid #E5E6EB' }}
+      >
+        登录 / 注册
+      </button>
+      <div className="text-center mt-2.5">
+        <span className="text-[11px] text-text-tertiary">首次调研免费体验</span>
       </div>
-      <div className="flex gap-4" style={{ marginTop: 16 }}>
-        <SmallBtn>使用帮助</SmallBtn>
-        <SmallBtn>联系我们</SmallBtn>
-        <SmallBtn>隐私政策</SmallBtn>
+
+      <div className="flex items-center justify-center gap-3 mt-3">
+        <button onClick={() => message.info('隐私政策页面开发中')} className="text-[11px] text-text-tertiary hover:text-text-secondary transition-colors" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+          隐私政策
+        </button>
+        <span className="text-[11px] text-text-tertiary">·</span>
+        <button onClick={() => message.info('用户协议页面开发中')} className="text-[11px] text-text-tertiary hover:text-text-secondary transition-colors" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+          用户协议
+        </button>
       </div>
     </div>
   )

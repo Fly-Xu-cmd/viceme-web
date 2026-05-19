@@ -28,7 +28,7 @@ export default function AudioVisualizer({
   const audioRef = useRef<AudioState>({ context: null, analyser: null, stream: null, source: null })
   const animationRef = useRef<number>(0)
   const [duration, setDuration] = useState(0)
-  const timerRef = useRef<ReturnType<typeof setInterval>>()
+  const timerRef = useRef<ReturnType<typeof setInterval>>(undefined)
   const [permissionDenied, setPermissionDenied] = useState(false)
 
   const stopAudio = useCallback(() => {
